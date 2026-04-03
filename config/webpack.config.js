@@ -6,10 +6,6 @@ const rootPath = process.cwd()
 const distPath = path.join(rootPath, 'dist')
 const srcPath = path.join(rootPath, 'src')
 
-const ATTRIBUTES_TO_EXPAND = [
-  'src', 'gltf-model', 'cover-image-url', 'footer-image-url', 'watermark-image-url',
-]
-
 const makeJsLoader = () => ({
   test: /\.js$/,
   use: {
@@ -45,22 +41,8 @@ const makeDefaultHtmlLoader = () => ({
     loader: 'html-loader',
     options: {
       esModule: false,
-      sources: {
-        list: [
-          '...',
-          {
-            tag: 'script',
-            attribute: 'src',
-            type: 'src',
-            filter: () => false,
-          },
-          ...ATTRIBUTES_TO_EXPAND.map(attr => ({
-            tag: '*',
-            attribute: attr,
-            type: 'src',
-          })),
-        ],
-      },
+      // Keep URLs in HTML untouched; external vendor files are copied as static assets.
+      sources: false,
     },
   },
 })

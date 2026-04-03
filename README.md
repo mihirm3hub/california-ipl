@@ -18,20 +18,20 @@ spawning new objects, and importing a 3D model.
 
 Please raise any questions on [Github Discussions](https://github.com/orgs/8thwall/discussions) or join the [Discord](https://8th.io/discord) to connect with the community.
 
-## Deploy To Vercel
+## Deploy To Netlify
 
-This project is configured for static deployment on Vercel.
+This project is configured for static deployment on Netlify.
 
 1. Install dependencies: `npm install`
 2. Build locally (recommended): `npm run build`
-3. Push to your Git provider and import the repository into Vercel
-4. Deploy with default settings (the repo includes `vercel.json`)
+3. Push to your Git provider and import the repository into Netlify
+4. Deploy with default settings (the repo includes `netlify.toml`)
 
-Local Vercel CLI flow (optional):
+Netlify CLI flow (optional):
 
-1. `npm i -g vercel`
-2. `vercel login`
-3. `vercel --prod`
+1. `npm i -g netlify-cli`
+2. `netlify login`
+3. `netlify deploy --build --prod`
 
 ### What Is Optimized
 

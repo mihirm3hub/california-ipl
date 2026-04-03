@@ -3,10 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "prebuild": "node scripts/verify-lfs-assets.js",
     "build": "webpack --config config/webpack.config.js",
     "serve": "webpack-dev-server --mode=development --config config/webpack.config.js",
     "dev": "npm run serve",
-    "vercel-build": "npm run build"
+    "netlify-build": "npm run build"
   },
   "engines": {
     "node": ">=20"

@@ -2,8 +2,8 @@
 
 export const tapPlaceComponent = {
   schema: {
-    min: {default: 6},
-    max: {default: 10},
+    min: { default: 6 },
+    max: { default: 10 },
   },
   init() {
     this.prompt = document.getElementById('promptText')
@@ -84,7 +84,8 @@ export const tapPlaceComponent = {
     })
 
     newElement.setAttribute('gltf-model', '#cactusModel')
-    newElement.setAttribute('class', 'cantap cactus')
+
+
 
     newElement.addEventListener('click', (event) => {
       this.onCactusSelected(event)
@@ -104,6 +105,9 @@ export const tapPlaceComponent = {
         easing: 'easeOutElastic',
         dur: 800,
       })
+      newElement.setAttribute('class', 'cantap cactus')
+      // newElement.setAttribute('xrextras-two-finger-rotate', '')
+      // newElement.setAttribute('xrextras-pinch-scale', '')
     })
   },
 }

@@ -73,6 +73,11 @@ const config = {
           to: path.join(distPath, 'image-targets'),
           noErrorOnMissing: true,
         },
+        {
+          from: path.join(rootPath, 'almond.glb'),
+          to: path.join(distPath, 'almond.glb'),
+          noErrorOnMissing: true,
+        },
       ],
     }),
   ],

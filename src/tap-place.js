@@ -19,7 +19,7 @@ export const tapPlaceComponent = {
     }
 
     if (this.prompt) {
-      this.prompt.textContent = 'Spawning cacti every 5s'
+      this.prompt.textContent = 'Spawning almonds every 5s'
     }
 
     this.spawnIntervalId = setInterval(() => {
@@ -51,9 +51,26 @@ export const tapPlaceComponent = {
     this.popup.classList.add('hidden')
 
     if (this.selectedCactus) {
-      this.selectedCactus.setAttribute('visible', 'false')
+      const selectedElement = this.selectedCactus
       this.selectedCactus = null
+
+      selectedElement.classList.remove('cantap')
+      selectedElement.setAttribute('animation__shrink', {
+        property: 'scale',
+        to: '0 0 0',
+        easing: 'easeOutQuad',
+        dur: 400,
+      })
+
+      selectedElement.addEventListener('animationcomplete__shrink', () => {
+        if (selectedElement.parentNode) {
+          selectedElement.parentNode.removeChild(selectedElement)
+        }
+      }, {once: true})
+
+      return
     }
+
   },
   onCactusSelected(event) {
     if (event && typeof event.preventDefault === 'function') {

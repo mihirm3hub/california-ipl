@@ -446,8 +446,8 @@ export const entitySwapnerComponent = {
           id="sparkleVideo"
           material="src: #glowTex; color: 0.1 0.1 0.1; side: double; depthTest: true; transparent: true;"
           geometry="primitive: circle; height: 1.024 width: 1.024;"
-          scale=""
-          position="0 0 -0.2"
+          scale="1.5 1.5 1.5"
+          position="0 0.5 -1.3"
           rotation="0 0 0">
         </a-entity>
       `)

@@ -98,6 +98,16 @@ const config = {
           to: path.join(distPath, 'logoM.png'),
           noErrorOnMissing: true,
         },
+        {
+          from: path.join(rootPath, 'Ellipse.png'),
+          to: path.join(distPath, 'Ellipse.png'),
+          noErrorOnMissing: true,
+        },
+        {
+          from: path.join(rootPath, 'Ellipse.png'),
+          to: path.join(distPath, 'ellipse.png'),
+          noErrorOnMissing: true,
+        },
       ],
     }),
   ],

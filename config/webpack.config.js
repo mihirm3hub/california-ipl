@@ -84,6 +84,16 @@ const config = {
           noErrorOnMissing: true,
         },
         {
+          from: path.join(rootPath, '2.mp4'),
+          to: path.join(distPath, '2.mp4'),
+          noErrorOnMissing: true,
+        },
+        {
+          from: path.join(rootPath, 'sparkles.mp4'),
+          to: path.join(distPath, 'sparkles.mp4'),
+          noErrorOnMissing: true,
+        },
+        {
           from: path.join(rootPath, 'logoM.png'),
           to: path.join(distPath, 'logoM.png'),
           noErrorOnMissing: true,

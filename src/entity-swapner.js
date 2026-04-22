@@ -51,7 +51,7 @@ export const entitySwapnerComponent = {
     this.idleSpawnIntervalId = window.setInterval(() => {
       console.log('[almond] idle spawn tick')
       this.spawnIdleAlmond()
-    }, 3000)
+    }, 30000)
 
     console.log('[bb] init: starting featured match streaming')
     this.startBallByBallStreaming()

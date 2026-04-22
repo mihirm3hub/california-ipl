@@ -17,8 +17,9 @@
   <script crossorigin="anonymous" src="./external/scripts/8frame-1.5.0.min.js"></script>
   <script crossorigin="anonymous" src="./external/xrextras/xrextras.js"></script>
   <script crossorigin="anonymous" src="./external/landing-page/landing-page.js"></script>
-  <script crossorigin="anonymous" src="./external/xr/xr.js" async="true" data-preload-chunks="slam">
-  </script>
+  <script crossorigin="anonymous" src="./external/xr/xr.js" async="true" data-preload-chunks="slam"></script>
+  <script src="https://unpkg.com/aframe-look-at-component@0.8.0/dist/aframe-look-at-component.min.js"></script>
+  
 
 <!-- Copyright (c) 2024 8th Wall, Inc. -->
 <!-- head.html is optional; elements will be added to your html head before app.js is loaded. -->
@@ -74,7 +75,7 @@
 
   <!-- We can define assets here to be loaded when A-Frame initializes -->
   <a-assets>
-    <img id="groundTex" crossorigin="anonymous" src="https://machine-code-images.s3.ap-south-1.amazonaws.com/bg.jpeg">
+    <img id="groundTex" crossorigin="anonymous" src="">
     <a-asset-item id="almondModel" crossorigin="anonymous" src="./almond.glb"></a-asset-item>
     <video
       id="alpha-video"
@@ -83,7 +84,16 @@
       playsinline
       crossorigin="anonymous"
       loop="true"
-      src="./ring.mp4#t=0.001">
+      src="./2.mp4#t=0.001">
+    </video>
+    <video
+      id="sparkle-video"
+      muted
+      autoplay
+      playsinline
+      crossorigin="anonymous"
+      loop="true"
+      src="./sparkles.mp4#t=0.001">
     </video>
   </a-assets>
 

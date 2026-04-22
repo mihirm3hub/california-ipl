@@ -5,6 +5,13 @@
 
 import './index.css'
 
+AFRAME.registerComponent('no-cull', {
+  init() {
+    this.el.addEventListener('model-loaded', () => {
+      this.el.object3D.traverse(obj => obj.frustumCulled = false)
+    })
+  },
+})
 // Register custom A-Frame components in app.js before the scene in body.html has loaded.
 import { entitySwapnerComponent } from './entity-swapner'
 AFRAME.registerComponent('entity-swapner', entitySwapnerComponent)

@@ -1,27 +1,5 @@
 function resolveApiBaseUrl() {
-  const v =
-    (typeof globalThis !== 'undefined' && globalThis.__API_BASE_URL__) ||
-    (typeof window !== 'undefined' &&
-      window.localStorage &&
-      window.localStorage.getItem('API_BASE_URL')) ||
-    ''
-  const trimmed = typeof v === 'string' ? v.trim() : ''
-  if (trimmed) return trimmed.replace(/\/+$/, '')
-
-  // Dev-friendly default: frontend on localhost, backend on :8787.
-  if (typeof window !== 'undefined' && window.location) {
-    const host = window.location.hostname
-    const port = window.location.port
-    if (
-      (host === '127.0.0.1' || host === 'localhost') &&
-      port &&
-      port !== '8787'
-    ) {
-      return 'https://almond-ipl.vercel.app'
-    }
-  }
-
-  return ''
+return "https://almond-ipl.vercel.app"
 }
 
 function resolveUrl(path) {

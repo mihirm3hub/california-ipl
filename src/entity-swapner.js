@@ -430,29 +430,39 @@ export const entitySwapnerComponent = {
     this.el.sceneEl.appendChild(parentElement)
     parentElement.appendChild(newElement)
 
+    // newElement.insertAdjacentHTML('beforeend', `
+    //     <a-entity
+    //       id="sparkleVideo"
+    //       play-video="video: #sparkle-video; autoplay: true"
+    //       material="shader: chromakey; src: #sparkle-video; color: 0.1 0.1 0.1; side: double; depthTest: true;"
+    //       geometry="primitive: plane; height: 1.024 width: 1.024;"
+    //       scale=""
+    //       position="0 0 -0.2"
+    //       rotation="0 0 0">
+    //     </a-entity>
+    //   `)
     newElement.insertAdjacentHTML('beforeend', `
         <a-entity
           id="sparkleVideo"
-          play-video="video: #sparkle-video; autoplay: true"
-          material="shader: chromakey; src: #sparkle-video; color: 0.1 0.1 0.1; side: double; depthTest: true;"
-          geometry="primitive: plane; height: 1.024 width: 1.024;"
+          material="src: #glowTex; color: 0.1 0.1 0.1; side: double; depthTest: true; transparent: true;"
+          geometry="primitive: circle; height: 1.024 width: 1.024;"
           scale=""
           position="0 0 -0.2"
           rotation="0 0 0">
         </a-entity>
       `)
 
-    parentElement.insertAdjacentHTML('beforeend', `
-        <a-entity
-          id="alphaVideo"
-          play-video="video: #alpha-video; autoplay: true"
-          material="shader: chromakey; src: #alpha-video; color: 0.1 0.1 0.1; side: double; depthTest: true;"
-          geometry="primitive: plane; height: 1.024 width: 1.024;"
-          scale="4 4 4"
-          position="0 .4 0"
-          rotation="90 0 0">
-        </a-entity>
-      `)
+    // parentElement.insertAdjacentHTML('beforeend', `
+    //     <a-entity
+    //       id="alphaVideo"
+    //       play-video="video: #alpha-video; autoplay: true"
+    //       material="shader: chromakey; src: #alpha-video; color: 0.1 0.1 0.1; side: double; depthTest: true;"
+    //       geometry="primitive: plane; height: 1.024 width: 1.024;"
+    //       scale="4 4 4"
+    //       position="0 .4 0"
+    //       rotation="90 0 0">
+    //     </a-entity>
+    //   `)
 
     newElement.addEventListener('model-loaded', () => {
       // Once the model is loaded, we are ready to show it popping in using an animation.

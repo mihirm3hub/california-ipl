@@ -13,8 +13,8 @@ AFRAME.registerComponent('no-cull', {
   },
 })
 // Register custom A-Frame components in app.js before the scene in body.html has loaded.
-import { entitySwapnerComponent } from './entity-swapner'
-AFRAME.registerComponent('entity-swapner', entitySwapnerComponent)
+import { entitySpawnerComponent } from './entity-spawner'
+AFRAME.registerComponent('entity-spawner', entitySpawnerComponent)
 
 import { chromaKeyShader } from './chroma-key'
 AFRAME.registerShader('chromakey', chromaKeyShader)

@@ -84,8 +84,38 @@ const config = {
           noErrorOnMissing: true,
         },
         {
+          from: path.join(rootPath, '2.mp4'),
+          to: path.join(distPath, '2.mp4'),
+          noErrorOnMissing: true,
+        },
+        {
+          from: path.join(rootPath, 'sparkles.mp4'),
+          to: path.join(distPath, 'sparkles.mp4'),
+          noErrorOnMissing: true,
+        },
+        {
           from: path.join(rootPath, 'logoM.png'),
           to: path.join(distPath, 'logoM.png'),
+          noErrorOnMissing: true,
+        },
+        {
+          from: path.join(rootPath, 'Ellipse.png'),
+          to: path.join(distPath, 'Ellipse.png'),
+          noErrorOnMissing: true,
+        },
+        {
+          from: path.join(rootPath, 'Ellipse.png'),
+          to: path.join(distPath, 'ellipse.png'),
+          noErrorOnMissing: true,
+        },
+        {
+          from: path.join(rootPath, 'Ellipse-yellow.png'),
+          to: path.join(distPath, 'Ellipse-yellow.png'),
+          noErrorOnMissing: true,
+        },
+        {
+          from: path.join(rootPath, 'Ellipse-yellow.png'),
+          to: path.join(distPath, 'ellipse-yellow.png'),
           noErrorOnMissing: true,
         },
       ],

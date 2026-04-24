@@ -46,7 +46,7 @@
 </div>
 
 <div class="over">
-  <span id="promptText">Tap To Place Model</span>
+  <span id="promptText"></span>
   <span id="scoreText" aria-label="Score">Score: 0</span>
 </div>
 
@@ -77,6 +77,8 @@
   <!-- We can define assets here to be loaded when A-Frame initializes -->
   <a-assets>
     <img id="groundTex" crossorigin="anonymous" src="">
+    <img id="glowTex" crossorigin="anonymous" src="./Ellipse.png">
+    <img id="glowTexYellow" crossorigin="anonymous" src="./Ellipse-yellow.png">
     <a-asset-item id="almondModel" crossorigin="anonymous" src="./almond.glb"></a-asset-item>
     <video
       id="alpha-video"
@@ -128,14 +130,14 @@
   <a-light type="ambient" intensity="0.5"></a-light>
 
   <!-- Adding the cantap class allows the ground to be clicked -->
-  <a-box
+  <!-- <a-box
     id="ground"
     class="cantap"
     scale="1000 2 1000"
     position="0 -0.99 0"
     material="shader: shadow; transparent: true; opacity: 0.4"
     shadow>
-  </a-box>
+  </a-box> -->
 </a-scene>
 
 </body>

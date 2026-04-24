@@ -31,6 +31,7 @@ export const entitySwapnerComponent = {
     this.bbError = ''
     this.bbNotStarted = false
     this.score = 0
+    this.lastAwardedPoints = 0
     this.nextSpawnMeta = null
 
     this.hidePopup = this.hidePopup.bind(this)
@@ -50,7 +51,7 @@ export const entitySwapnerComponent = {
     this.idleSpawnIntervalId = window.setInterval(() => {
       console.log('[almond] idle spawn tick')
       this.spawnIdleAlmond()
-    }, 3000)
+    }, 30000)
 
     console.log('[bb] init: starting featured match streaming')
     this.startBallByBallStreaming()
@@ -60,15 +61,13 @@ export const entitySwapnerComponent = {
     if (!this.scoreEl) return
     console.log('[score] scoreEl:', this.scoreEl)
     console.log('[score] score:', this.score)
+    const awardText = this.lastAwardedPoints > 0 ? ` (+${this.lastAwardedPoints})` : ''
     this.scoreEl.textContent = `Score: ${this.score}`
     console.log('[score] scoreEl.textContent:', this.scoreEl.textContent)
   },
-  tagLatestSpawnedAlmond(meta) {
-    if (!meta || !this.el?.sceneEl) return
+  tagSpawnedAlmond(el, meta) {
+    if (!meta || !el) return
     try {
-      const all = this.el.sceneEl.querySelectorAll('a-entity[gltf-model="#almondModel"]')
-      if (!all || !all.length) return
-      const el = all[all.length - 1]
       el.dataset.spawnType = meta.type
       el.dataset.points = String(meta.points)
       el.dataset.despawnMs = String(meta.despawnMs)
@@ -121,14 +120,14 @@ export const entitySwapnerComponent = {
   spawnIdleAlmond() {
     if (!this.el?.sceneEl) return
     const meta = { type: 'idle', points: 10, despawnMs: 10000 }
-    this.spawnAlmondAroundUser()
-    this.tagLatestSpawnedAlmond(meta)
+    const almondEl = this.spawnAlmondAroundUser(meta.type)
+    this.tagSpawnedAlmond(almondEl, meta)
   },
   spawnMatchEventAlmond() {
     if (!this.el?.sceneEl) return
-    const meta = { type: 'match', points: 50, despawnMs: 20000 }
-    this.spawnAlmondAroundUser()
-    this.tagLatestSpawnedAlmond(meta)
+    const meta = { type: 'match', points: 50, despawnMs: 30000 }
+    const almondEl = this.spawnAlmondAroundUser(meta.type)
+    this.tagSpawnedAlmond(almondEl, meta)
   },
   async startBallByBallStreaming(pollMs = 5000) {
     this.stopBallByBallStreaming()
@@ -309,6 +308,27 @@ export const entitySwapnerComponent = {
 
     this.popup.classList.remove('hidden')
   },
+  resolveSelectedAlmondPoints() {
+    if (!this.selectedAlmond || !this.selectedAlmond.dataset) {
+      return 0
+    }
+
+    const explicitPoints = Number(this.selectedAlmond.dataset.points)
+    if (Number.isFinite(explicitPoints) && explicitPoints > 0) {
+      return explicitPoints
+    }
+
+    // Fallback mapping if a future spawn path only tags spawnType.
+    const spawnType = this.selectedAlmond.dataset.spawnType
+    if (spawnType === 'match') {
+      return 50
+    }
+    if (spawnType === 'idle') {
+      return 10
+    }
+
+    return 0
+  },
   hidePopup() {
     if (!this.popup) {
       return
@@ -351,15 +371,16 @@ export const entitySwapnerComponent = {
     }
 
     this.selectedAlmond = event && event.currentTarget ? event.currentTarget : null
-
+    console.log('scored')
     // Award points immediately on tap (prevents "score not updating" if user doesn't hit OK).
     try {
       if (this.selectedAlmond && this.selectedAlmond.dataset) {
         if (this.selectedAlmond.dataset.claimed !== '1') {
-          const pts = Number(this.selectedAlmond.dataset.points || 0)
+          const pts = this.resolveSelectedAlmondPoints()
           if (Number.isFinite(pts) && pts > 0) {
             this.selectedAlmond.dataset.claimed = '1'
             this.score += pts
+            this.lastAwardedPoints = pts
             console.log('[score] +', pts, '=>', this.score)
             this.renderScore()
           }
@@ -371,7 +392,7 @@ export const entitySwapnerComponent = {
 
     // Update popup copy with points.
     try {
-      const pts = Number(this.selectedAlmond?.dataset?.points || 0)
+      const pts = this.resolveSelectedAlmondPoints()
       const p = this.popup?.querySelector?.('.popup-card p')
       if (p) {
         p.textContent = pts ? `+${pts} points` : 'You clicked the almond successfully.'
@@ -383,9 +404,9 @@ export const entitySwapnerComponent = {
     this.renderBallByBallStatus()
     this.showPopup()
   },
-  spawnAlmondAroundUser() {
+  spawnAlmondAroundUser(spawnType = 'idle') {
     if (!this.camera) {
-      return
+      return null
     }
 
     const cameraPosition = this.camera.object3D.position
@@ -430,29 +451,42 @@ export const entitySwapnerComponent = {
     this.el.sceneEl.appendChild(parentElement)
     parentElement.appendChild(newElement)
 
+    // newElement.insertAdjacentHTML('beforeend', `
+    //     <a-entity
+    //       id="sparkleVideo"
+    //       play-video="video: #sparkle-video; autoplay: true"
+    //       material="shader: chromakey; src: #sparkle-video; color: 0.1 0.1 0.1; side: double; depthTest: true;"
+    //       geometry="primitive: plane; height: 1.024 width: 1.024;"
+    //       scale=""
+    //       position="0 0 -0.2"
+    //       rotation="0 0 0">
+    //     </a-entity>
+    //   `)
+    console.log('[almond] spawn type:', spawnType)
+    const glowTextureId = spawnType === 'match' ? 'glowTexYellow' : 'glowTex'
+
     newElement.insertAdjacentHTML('beforeend', `
         <a-entity
           id="sparkleVideo"
-          play-video="video: #sparkle-video; autoplay: true"
-          material="shader: chromakey; src: #sparkle-video; color: 0.1 0.1 0.1; side: double; depthTest: true;"
-          geometry="primitive: plane; height: 1.024 width: 1.024;"
-          scale=""
-          position="0 0 -0.2"
+          material="src: #${glowTextureId}; color: 0.1 0.1 0.1; side: double; depthTest: true; transparent: true;"
+          geometry="primitive: circle; height: 1.024 width: 1.024;"
+          scale="1.5 1.5 1.5"
+          position="0 0.5 -1.3"
           rotation="0 0 0">
         </a-entity>
       `)
 
-    parentElement.insertAdjacentHTML('beforeend', `
-        <a-entity
-          id="alphaVideo"
-          play-video="video: #alpha-video; autoplay: true"
-          material="shader: chromakey; src: #alpha-video; color: 0.1 0.1 0.1; side: double; depthTest: true;"
-          geometry="primitive: plane; height: 1.024 width: 1.024;"
-          scale="4 4 4"
-          position="0 .4 0"
-          rotation="90 0 0">
-        </a-entity>
-      `)
+    // parentElement.insertAdjacentHTML('beforeend', `
+    //     <a-entity
+    //       id="alphaVideo"
+    //       play-video="video: #alpha-video; autoplay: true"
+    //       material="shader: chromakey; src: #alpha-video; color: 0.1 0.1 0.1; side: double; depthTest: true;"
+    //       geometry="primitive: plane; height: 1.024 width: 1.024;"
+    //       scale="4 4 4"
+    //       position="0 .4 0"
+    //       rotation="90 0 0">
+    //     </a-entity>
+    //   `)
 
     newElement.addEventListener('model-loaded', () => {
       // Once the model is loaded, we are ready to show it popping in using an animation.
@@ -467,5 +501,7 @@ export const entitySwapnerComponent = {
       // newElement.setAttribute('xrextras-two-finger-rotate', '')
       // newElement.setAttribute('xrextras-pinch-scale', '')
     })
+
+    return newElement
   },
 }

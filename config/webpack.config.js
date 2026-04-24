@@ -61,6 +61,11 @@ const config = {
       filename: 'index.html',
       inject: false,
     }),
+    new HtmlWebpackPlugin({
+      template: path.join(srcPath, 'benefit-collection.html'),
+      filename: 'benefit-collection.html',
+      inject: false,
+    }),
     new CopyWebpackPlugin({
       patterns: [
         {

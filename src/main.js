@@ -1,5 +1,22 @@
 import { benefitMessages } from './lib/benefitMessages'
 
+const unlockedBenefitsStorageKey = 'almondUnlockedBenefits'
+const rewardCycleStateStorageKey = 'almondRewardCycleState'
+const totalBenefitCount = 12
+const benefitCardCountsByKey = {
+  'WEIGHT MANAGEMENT': 1,
+  'GLOWING SKIN': 1,
+  'GUT HEALTH': 1,
+  IMMUNITY: 1,
+  'CALM NERVES': 1,
+  'BLOOD SUGAR CONTROL': 1,
+  'HEART HEALTH': 1,
+  'HAIR HEALTH': 1,
+  'MUSCLE STRENGTH': 1,
+  'BONE STRENGTH': 1,
+  'SUSTAINED ENERGY': 2,
+}
+
 const matchRewardMessages = [
   {
     title: 'Bone Strength Unlocked',
@@ -65,6 +82,86 @@ const normalizeBenefitKey = (value) =>
     .trim()
     .toUpperCase()
 
+const getUnlockedBenefitKeys = () => {
+  if (typeof window === 'undefined' || !window.localStorage) {
+    return []
+  }
+
+  try {
+    const raw = window.localStorage.getItem(unlockedBenefitsStorageKey)
+    const parsed = JSON.parse(raw || '[]')
+    return Array.isArray(parsed) ? parsed : []
+  } catch (error) {
+    return []
+  }
+}
+
+const saveUnlockedBenefitKey = (title) => {
+  if (typeof window === 'undefined' || !window.localStorage) {
+    return
+  }
+
+  const benefitKey = normalizeBenefitKey(title)
+  if (!benefitKey) {
+    return
+  }
+
+  const unlockedBenefitKeys = new Set(getUnlockedBenefitKeys())
+  unlockedBenefitKeys.add(benefitKey)
+  window.localStorage.setItem(
+    unlockedBenefitsStorageKey,
+    JSON.stringify([...unlockedBenefitKeys]),
+  )
+}
+
+const getCollectedBenefitCount = () =>
+  getUnlockedBenefitKeys().reduce((total, benefitKey) => {
+    const normalizedKey = normalizeBenefitKey(benefitKey)
+    return total + (benefitCardCountsByKey[normalizedKey] || 0)
+  }, 0)
+
+const updateBenefitCount = () => {
+  const benefitCountEl = document.getElementById('BenefitCount')
+  if (!benefitCountEl) {
+    return
+  }
+
+  benefitCountEl.textContent = `${getCollectedBenefitCount()}/${totalBenefitCount}`
+}
+
+const getRewardCycleState = () => {
+  if (typeof window === 'undefined' || !window.localStorage) {
+    return { matchRewardIndex: -1, idleRewardIndex: -1 }
+  }
+
+  try {
+    const raw = window.localStorage.getItem(rewardCycleStateStorageKey)
+    const parsed = JSON.parse(raw || '{}')
+
+    return {
+      matchRewardIndex: Number.isInteger(parsed?.matchRewardIndex)
+        ? parsed.matchRewardIndex
+        : -1,
+      idleRewardIndex: Number.isInteger(parsed?.idleRewardIndex)
+        ? parsed.idleRewardIndex
+        : -1,
+    }
+  } catch (error) {
+    return { matchRewardIndex: -1, idleRewardIndex: -1 }
+  }
+}
+
+const saveRewardCycleState = (matchRewardIndex, idleRewardIndex) => {
+  if (typeof window === 'undefined' || !window.localStorage) {
+    return
+  }
+
+  window.localStorage.setItem(
+    rewardCycleStateStorageKey,
+    JSON.stringify({matchRewardIndex, idleRewardIndex}),
+  )
+}
+
 const matchRewardTitleKeys = new Set(
   matchRewardMessages.map((message) => normalizeBenefitKey(message.title)),
 )
@@ -114,9 +211,10 @@ const initRewardPopupContent = () => {
   const popupPointsText = document.getElementById('rewardPointsText')
   const popupTitle = document.getElementById('rewardTitle')
   const popupDesc = document.getElementById('rewardDesc')
+  const rewardCycleState = getRewardCycleState()
 
-  let matchRewardIndex = -1
-  let idleRewardIndex = -1
+  let matchRewardIndex = rewardCycleState.matchRewardIndex
+  let idleRewardIndex = rewardCycleState.idleRewardIndex
 
   const getNextMessage = (points) => {
     const isMatchReward = Number(points) >= 50
@@ -128,10 +226,12 @@ const initRewardPopupContent = () => {
 
     if (isMatchReward) {
       matchRewardIndex = (matchRewardIndex + 1) % rewardMessages.length
+      saveRewardCycleState(matchRewardIndex, idleRewardIndex)
       return rewardMessages[matchRewardIndex]
     }
 
     idleRewardIndex = (idleRewardIndex + 1) % rewardMessages.length
+    saveRewardCycleState(matchRewardIndex, idleRewardIndex)
     return rewardMessages[idleRewardIndex]
   }
 
@@ -150,10 +250,16 @@ const initRewardPopupContent = () => {
     if (popupDesc && nextMessage?.description) {
       popupDesc.textContent = nextMessage.description
     }
+
+    if (nextMessage?.title) {
+      saveUnlockedBenefitKey(nextMessage.title)
+      updateBenefitCount()
+    }
   }
 }
 
 window.addEventListener('DOMContentLoaded', () => {
   initLookAroundToggle()
   initRewardPopupContent()
+  updateBenefitCount()
 })

@@ -9,7 +9,7 @@ import {
   stripBallCommentHtml,
 } from './lib/ballEvents'
 
-export const entitySwapnerComponent = {
+export const entitySpawnerComponent = {
   schema: {
     min: { default: 6 },
     max: { default: 10 },
@@ -55,6 +55,57 @@ export const entitySwapnerComponent = {
 
     console.log('[bb] init: starting featured match streaming')
     this.startBallByBallStreaming()
+    this.registerConsoleSpawnKnob()
+  },
+  registerConsoleSpawnKnob() {
+    if (typeof window === 'undefined') return
+
+    // Rebind the knob to the latest component instance.
+    if (typeof window.__cleanupAlmondSpawnKnob === 'function') {
+      window.__cleanupAlmondSpawnKnob()
+    }
+
+    let current = 'idle'
+    const spawnFromConsole = (value) => {
+      const normalized = String(value || '').trim().toLowerCase()
+      if (normalized !== 'idle' && normalized !== 'match') {
+        console.warn("[almond] use 'idle' or 'match'")
+        return
+      }
+
+      const meta =
+        normalized === 'match'
+          ? { type: 'match', points: 50, despawnMs: 30000 }
+          : { type: 'idle', points: 10, despawnMs: 10000 }
+      const almondEl = this.spawnAlmondAroundUser(meta.type)
+      this.tagSpawnedAlmond(almondEl, meta)
+      console.log('[almond] console spawn:', normalized)
+    }
+
+    window.spawnAlmondType = (value) => {
+      spawnFromConsole(value)
+    }
+
+    Object.defineProperty(window, 'almondSpawnType', {
+      configurable: true,
+      enumerable: false,
+      get() {
+        return current
+      },
+      set: (value) => {
+        current = String(value || '').trim().toLowerCase()
+        spawnFromConsole(current)
+      },
+    })
+
+    window.__cleanupAlmondSpawnKnob = () => {
+      delete window.spawnAlmondType
+      delete window.almondSpawnType
+      delete window.__cleanupAlmondSpawnKnob
+    }
+
+    console.log("[almond] test knob ready: set window.almondSpawnType = 'idle' | 'match'")
+    console.log("[almond] helper ready: window.spawnAlmondType('idle' | 'match')")
   },
   renderScore() {
     console.log('[score] rendering score:', this.score)
@@ -300,6 +351,10 @@ export const entitySwapnerComponent = {
       this.popupOkBtn.removeEventListener('click', this.hidePopup)
     }
 
+    if (typeof window !== 'undefined' && typeof window.__cleanupAlmondSpawnKnob === 'function') {
+      window.__cleanupAlmondSpawnKnob()
+    }
+
   },
   showPopup() {
     if (!this.popup) {
@@ -451,31 +506,40 @@ export const entitySwapnerComponent = {
     this.el.sceneEl.appendChild(parentElement)
     parentElement.appendChild(newElement)
 
-    // newElement.insertAdjacentHTML('beforeend', `
-    //     <a-entity
-    //       id="sparkleVideo"
-    //       play-video="video: #sparkle-video; autoplay: true"
-    //       material="shader: chromakey; src: #sparkle-video; color: 0.1 0.1 0.1; side: double; depthTest: true;"
-    //       geometry="primitive: plane; height: 1.024 width: 1.024;"
-    //       scale=""
-    //       position="0 0 -0.2"
-    //       rotation="0 0 0">
-    //     </a-entity>
-    //   `)
+
     console.log('[almond] spawn type:', spawnType)
     const glowTextureId = spawnType === 'match' ? 'glowTexYellow' : 'glowTex'
 
     newElement.insertAdjacentHTML('beforeend', `
         <a-entity
-          id="sparkleVideo"
+          id="sparkleImage"
           material="src: #${glowTextureId}; color: 0.1 0.1 0.1; side: double; depthTest: true; transparent: true;"
           geometry="primitive: circle; height: 1.024 width: 1.024;"
+          render-order="foreground"
           scale="1.5 1.5 1.5"
           position="0 0.5 -1.3"
           rotation="0 0 0">
         </a-entity>
       `)
-
+    if (spawnType === 'match') {
+      newElement.insertAdjacentHTML('beforeend', `
+          <a-entity
+            id="sparkleVideo"
+            play-video="video: #sparkle-video; autoplay: true"
+            material="shader: chromakey; src: #sparkle-video; color: 0.1 0.1 0.1; side: double; depthTest: true; transparent: true;alphaTest: 0.5;"
+            geometry="primitive: plane; height: 1.024 width: 1.024;"
+            render-order="background"
+            scale="1.5 1.5 1.5"
+            position="0 0.5 -1.26"
+            rotation="0 0 0">
+          </a-entity>
+        `)
+    } else if (spawnType === 'idle') {
+      const sparkleVideoEl = newElement.querySelector('#sparkleVideo')
+      if (sparkleVideoEl && sparkleVideoEl.parentNode) {
+        sparkleVideoEl.parentNode.removeChild(sparkleVideoEl)
+      }
+    }
     // parentElement.insertAdjacentHTML('beforeend', `
     //     <a-entity
     //       id="alphaVideo"

@@ -105,6 +105,8 @@ a-scene {
   justify-content: center;
   align-items: flex-end;
   gap: 5px;
+  cursor: pointer;
+  z-index: 10;
 }
 
 .hamburger span {
@@ -112,6 +114,7 @@ a-scene {
   background: var(--color-white);
   display: block;
   border-radius: 4px;
+  transition: 0.3s;
 }
 
 .hamburger span:nth-child(1) {
@@ -124,6 +127,54 @@ a-scene {
 
 .hamburger span:nth-child(3) {
   width: 10px;
+}
+
+/* Mobile Menu */
+.mobile-menu {
+  pointer-events: auto;
+  position: fixed;
+  top: 0;
+  right: -100%;
+  width: 100%;
+  height: 100dvh;
+  background: #0d6efd;
+  padding: 80px 20px;
+  transition: 0.3s ease;
+  z-index: 1000;
+}
+
+.mobile-menu.active {
+  right: 0;
+}
+
+.mobile-menu ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.mobile-menu li {
+  margin-bottom: 20px;
+}
+
+.mobile-menu a {
+  color: #fff;
+  text-decoration: none;
+  font-size: 18px;
+}
+
+.menu-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  font-size: 26px;
+  color: #fff;
+  cursor: pointer;
+}
+
+/* Prevent background scroll when mobile menu is open */
+body.menu-open {
+  overflow: hidden;
 }
 
 .main-content {
@@ -330,12 +381,16 @@ a-scene {
     align-items: center;
     gap: 5px;
 
-    background: #E2F9E7;
+    background: #f2f2f2;
     padding: 10px 14px;
     border-radius: 4px;
     border: 1px solid var(--color-white);
 
     z-index: 10;
+}
+
+.live-status.is-connected {
+    background: #E2F9E7;
 }
 
 /* TEXT */
@@ -344,6 +399,10 @@ a-scene {
     font-size: 14px;
     font-weight: var(--fw-semi-bold);
     line-height: 1;
+    color: #5d6470;
+}
+
+.live-status.is-connected p {
     color: #087E16;
 }
 
@@ -351,10 +410,14 @@ a-scene {
 .live-dot {
     width: 10px;
     height: 10px;
-    background: #087E16;
+    background: #8d96a3;
     border-radius: 50%;
 
     position: relative;
+}
+
+.live-status.is-connected .live-dot {
+    background: #087E16;
 }
 
 /* 🔥 BLINK EFFECT (white pulse) */
@@ -367,6 +430,10 @@ a-scene {
     background: var(--color-white);
     opacity: 1;
 
+    animation: none;
+}
+
+.live-status.is-connected .live-dot::after {
     animation: blinkDot 1s infinite;
 }
 

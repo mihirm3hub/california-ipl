@@ -258,8 +258,65 @@ const initRewardPopupContent = () => {
   }
 }
 
+const initHamburgerMenu = () => {
+  const hamburger = document.getElementById('hamburger')
+  const mobileMenu = document.getElementById('mobileMenu')
+
+  if (!hamburger || !mobileMenu) {
+    return
+  }
+
+  const openMenu = () => {
+    hamburger.classList.add('active')
+    mobileMenu.classList.add('active')
+    document.body.classList.add('menu-open')
+  }
+
+  const closeMenu = () => {
+    hamburger.classList.remove('active')
+    mobileMenu.classList.remove('active')
+    document.body.classList.remove('menu-open')
+  }
+
+  hamburger.addEventListener('click', (event) => {
+    event.stopPropagation()
+    if (mobileMenu.classList.contains('active')) {
+      closeMenu()
+    } else {
+      openMenu()
+    }
+  })
+
+  const menuClose = document.getElementById('menuClose')
+  if (menuClose) {
+    menuClose.addEventListener('click', closeMenu)
+  }
+
+  const menuLinks = mobileMenu.querySelectorAll('a')
+  menuLinks.forEach((link) => {
+    link.addEventListener('click', closeMenu)
+  })
+
+  document.addEventListener('click', (event) => {
+    if (
+      mobileMenu.classList.contains('active') &&
+      !mobileMenu.contains(event.target) &&
+      !hamburger.contains(event.target)
+    ) {
+      closeMenu()
+    }
+  })
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      closeMenu()
+    }
+  })
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   initLookAroundToggle()
   initRewardPopupContent()
   updateBenefitCount()
+  initHamburgerMenu()
 })

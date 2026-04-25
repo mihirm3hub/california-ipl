@@ -1,4 +1,5 @@
 import { benefitMessages } from './lib/benefitMessages'
+import { resolveApiBaseUrl } from './lib/cricketApi'
 
 const rewardCycleStateStorageKey = 'almondRewardCycleState'
 const userDataApiEndpoint = `${resolveApiBaseUrl()}api/user/userData`

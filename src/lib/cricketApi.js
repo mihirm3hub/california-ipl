@@ -100,6 +100,21 @@ function statusString(m) {
     .toLowerCase()
 }
 
+function isCompletedMatch(m) {
+  const s = statusString(m)
+  if (!s) return false
+  return (
+    s.includes('complete') ||
+    s.includes('completed') ||
+    s.includes('finish') ||
+    s.includes('result') ||
+    s.includes('abandon') ||
+    s.includes('cancel') ||
+    s.includes('no result') ||
+    s.includes('postpon')
+  )
+}
+
 function extractStartTime(m) {
   return (
     parseMatchTime(
@@ -132,6 +147,7 @@ function extractEndTime(m) {
 
 function isOngoingMatch(m, now) {
   const s = statusString(m)
+  if (isCompletedMatch(m)) return false
   if (
     s.includes('live') ||
     s.includes('ongoing') ||
@@ -144,10 +160,6 @@ function isOngoingMatch(m, now) {
     s.includes('break') ||
     s.includes('rain')
   ) {
-    // Exclude obviously finished states.
-    if (s.includes('complete') || s.includes('completed') || s.includes('finished') || s.includes('result')) {
-      return false
-    }
     return true
   }
 
@@ -163,7 +175,14 @@ function isOngoingMatch(m, now) {
 
 function isUpcomingMatch(m, now) {
   const s = statusString(m)
-  if (s.includes('upcoming') || s.includes('scheduled') || s.includes('not started') || s.includes('preview')) {
+  if (isCompletedMatch(m)) return false
+  if (
+    s.includes('upcoming') ||
+    s.includes('scheduled') ||
+    s.includes('not started') ||
+    s.includes('not_started') ||
+    s.includes('preview')
+  ) {
     return true
   }
   const start = extractStartTime(m)
@@ -203,7 +222,13 @@ export function pickFeaturedMatchKey(featuredJson, now = new Date()) {
   if (ongoing.length) return extractMatchKey(ongoing.sort(byStartAsc)[0])
   if (upcoming.length) return extractMatchKey(upcoming.sort(byStartAsc)[0])
 
-  // Fallback: first match that has a key at all.
+  // Fallback: first non-completed match that has a key.
+  for (const m of matches) {
+    const k = extractMatchKey(m)
+    if (k && !isCompletedMatch(m)) return k
+  }
+
+  // Last resort: if all matches are completed, return first keyed match.
   for (const m of matches) {
     const k = extractMatchKey(m)
     if (k) return k
@@ -247,10 +272,20 @@ export function pickFeaturedMatch(featuredJson, now = new Date()) {
   if (ongoing.length) chosen = ongoing.sort(byStartAsc)[0]
   else if (upcoming.length) chosen = upcoming.sort(byStartAsc)[0]
   else {
+    // Prefer any non-completed match if status parsing misses variants.
     for (const m of matches) {
-      if (extractMatchKey(m)) {
+      if (extractMatchKey(m) && !isCompletedMatch(m)) {
         chosen = m
         break
+      }
+    }
+    // Last resort if all are completed.
+    if (!chosen) {
+      for (const m of matches) {
+        if (extractMatchKey(m)) {
+          chosen = m
+          break
+        }
       }
     }
   }

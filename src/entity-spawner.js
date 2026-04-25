@@ -17,6 +17,8 @@ export const entitySpawnerComponent = {
   init() {
     this.prompt = document.getElementById('promptText')
     this.scoreEl = document.getElementById('scoreText')
+    this.liveStatusEl = document.querySelector('.live-status')
+    this.liveStatusTextEl = this.liveStatusEl?.querySelector('p') || null
     this.camera = document.getElementById('camera')
     this.popup = document.getElementById('almondPopup')
     this.popupOkBtn = document.getElementById('popupOkBtn')
@@ -31,9 +33,12 @@ export const entitySpawnerComponent = {
     this.bbJson = null
     this.bbError = ''
     this.bbNotStarted = false
+    this.isLiveMatchConnected = false
     this.score = 0
     this.lastAwardedPoints = 0
     this.nextSpawnMeta = null
+    this.idleSpawnCount = 0
+    this.idleSpawnStartedAt = Date.now()
 
     this.hidePopup = this.hidePopup.bind(this)
 
@@ -48,14 +53,22 @@ export const entitySpawnerComponent = {
       this.prompt.textContent = 'Waiting for match events…'
     }
     this.renderScore()
+    this.renderLiveMatchStatus()
 
     this.spawnIntervalId = null
 
+    // Spawn one idle almond immediately when the experience starts.
+    this.spawnIdleAlmond()
+
     // (1) Almond appears every 30s and disappears in 10s (10 points).
     this.idleSpawnIntervalId = window.setInterval(() => {
-      console.log('[almond] idle spawn tick')
+      this.idleSpawnCount += 1
+      console.log('[almond] 30s idle spawn tick:', {
+        count: this.idleSpawnCount,
+        elapsedSeconds: Math.round((Date.now() - this.idleSpawnStartedAt) / 1000),
+      })
       this.spawnIdleAlmond()
-    }, 3000)
+    }, 30000)
 
     console.log('[bb] init: starting featured match streaming')
     this.startBallByBallStreaming()
@@ -119,6 +132,18 @@ export const entitySpawnerComponent = {
     const awardText = this.lastAwardedPoints > 0 ? ` (+${this.lastAwardedPoints})` : ''
     this.scoreEl.textContent = `Score: ${this.score}`
     console.log('[score] scoreEl.textContent:', this.scoreEl.textContent)
+  },
+  setLiveMatchConnected(isConnected) {
+    this.isLiveMatchConnected = Boolean(isConnected)
+    this.renderLiveMatchStatus()
+  },
+  renderLiveMatchStatus() {
+    if (!this.liveStatusEl || !this.liveStatusTextEl) return
+
+    this.liveStatusEl.classList.toggle('is-connected', this.isLiveMatchConnected)
+    this.liveStatusTextEl.textContent = this.isLiveMatchConnected
+      ? 'Connected to Live Match'
+      : 'Not Connected to Live Match'
   },
   tagSpawnedAlmond(el, meta) {
     if (!meta || !el) return
@@ -188,6 +213,7 @@ export const entitySpawnerComponent = {
     this.stopBallByBallStreaming()
     this.bbError = ''
     this.bbNotStarted = false
+    this.setLiveMatchConnected(false)
 
     try {
       if (this.prompt) this.prompt.textContent = 'Finding featured match…'
@@ -221,6 +247,7 @@ export const entitySpawnerComponent = {
           '[bb] match not started; skipping ball-by-ball until status changes',
         )
         this.bbJson = null
+        this.setLiveMatchConnected(false)
         this.renderBallByBallStatus()
 
         // No ball-by-ball polling if the match is not started.
@@ -234,8 +261,11 @@ export const entitySpawnerComponent = {
             if (nextStatus !== 'not_started') {
               console.log('[bb] match started (status changed); starting ball-by-ball')
               this.startBallByBallStreaming(pollMs)
+            } else {
+              this.setLiveMatchConnected(false)
             }
           } catch (e) {
+            this.setLiveMatchConnected(false)
             console.warn('[bb] status tick failed:', e)
           }
         }, pollMs)
@@ -245,11 +275,13 @@ export const entitySpawnerComponent = {
         console.log('[bb] fetching ball-by-ball (initial)…')
         const json = await getBallByBall(matchKey)
         this.bbJson = json
+        this.setLiveMatchConnected(true)
         console.log('[bb] ball-by-ball loaded (initial)')
         this.renderBallByBallStatus()
       }
     } catch (e) {
       this.bbError = e?.message || 'Failed to load ball-by-ball'
+      this.setLiveMatchConnected(false)
       console.error('[bb] failed to start streaming:', e)
       this.renderBallByBallStatus()
       return
@@ -262,10 +294,12 @@ export const entitySpawnerComponent = {
         const json = await getBallByBall(this.bbMatchKey)
         this.bbJson = json
         this.bbError = ''
+        this.setLiveMatchConnected(true)
         console.log('[bb] polling tick: success')
         this.renderBallByBallStatus()
       } catch (e) {
         this.bbError = e?.message || 'Failed to refresh ball-by-ball'
+        this.setLiveMatchConnected(false)
         console.warn('[bb] polling tick: failed:', e)
         this.renderBallByBallStatus()
       }
@@ -282,6 +316,7 @@ export const entitySpawnerComponent = {
       this.bbStatusIntervalId = null
       console.log('[bb] status polling stopped')
     }
+    this.setLiveMatchConnected(false)
   },
   renderBallByBallStatus() {
     if (!this.prompt) return
@@ -527,25 +562,25 @@ export const entitySpawnerComponent = {
           rotation="0 0 0">
         </a-entity>
       `)
-    if (spawnType === 'match') {
-      newElement.insertAdjacentHTML('beforeend', `
-          <a-entity
-            id="sparkleVideo"
-            play-video="video: #sparkle-video; autoplay: true"
-            material="shader: chromakey; src: #sparkle-video; color: 0.1 0.1 0.1; side: double; depthTest: true; transparent: true;alphaTest: 0.5;"
-            geometry="primitive: plane; height: 1.024 width: 1.024;"
-            render-order="background"
-            scale="1.5 1.5 1.5"
-            position="0 0.5 -1.26"
-            rotation="0 0 0">
-          </a-entity>
-        `)
-    } else if (spawnType === 'idle') {
-      const sparkleVideoEl = newElement.querySelector('#sparkleVideo')
-      if (sparkleVideoEl && sparkleVideoEl.parentNode) {
-        sparkleVideoEl.parentNode.removeChild(sparkleVideoEl)
-      }
-    }
+    // if (spawnType === 'match') {
+    //   newElement.insertAdjacentHTML('beforeend', `
+    //       <a-entity
+    //         id="sparkleVideo"
+    //         play-video="video: #sparkle-video; autoplay: true"
+    //         material="shader: chromakey; src: #sparkle-video; color: 0.1 0.1 0.1; side: double; depthTest: true; transparent: true;alphaTest: 0.5;"
+    //         geometry="primitive: plane; height: 1.024 width: 1.024;"
+    //         render-order="background"
+    //         scale="1.5 1.5 1.5"
+    //         position="0 0.5 -1.26"
+    //         rotation="0 0 0">
+    //       </a-entity>
+    //     `)
+    // } else if (spawnType === 'idle') {
+    //   const sparkleVideoEl = newElement.querySelector('#sparkleVideo')
+    //   if (sparkleVideoEl && sparkleVideoEl.parentNode) {
+    //     sparkleVideoEl.parentNode.removeChild(sparkleVideoEl)
+    //   }
+    // }
     // parentElement.insertAdjacentHTML('beforeend', `
     //     <a-entity
     //       id="alphaVideo"

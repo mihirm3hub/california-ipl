@@ -55,12 +55,23 @@
       <header class="menu-header">
         <img src="./assets/images/superfood-logo.png" class="main-logo" alt="California Almonds Superfood for a Super You">
 
-        <button class="hamburger" type="button" aria-label="Open menu">
+        <button id="hamburger" class="hamburger" type="button" aria-label="Open menu">
           <span></span>
           <span></span>
           <span></span>
         </button>
       </header>
+
+      <!-- Mobile Menu -->
+      <div class="mobile-menu" id="mobileMenu">
+        <ul>
+          <li><a href="#">Home</a></li>
+          <li><a href="#">About</a></li>
+          <li><a href="#">Programs</a></li>
+          <li><a href="#">Contact</a></li>
+        </ul>
+        <div class="menu-close" id="menuClose">✕</div>
+      </div>
 
       <div class="main-content">
         <div class="ingame-stats">
@@ -118,7 +129,7 @@
 
     <div class="live-status" aria-live="polite">
       <span class="live-dot"></span>
-      <p>Connected to Live Match</p>
+      <p>Not Connected to Live Match</p>
     </div>
 
     <!-- Popup Overlay Start -->

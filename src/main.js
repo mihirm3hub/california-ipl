@@ -3,7 +3,7 @@ import { resolveApiBaseUrl } from './lib/cricketApi'
 
 const rewardCycleStateStorageKey = 'almondRewardCycleState'
 const totalBenefitCount = 12
-const userDataApiEndpoint = `${resolveApiBaseUrl()}//api/user/userData`
+const userDataApiEndpoint = `${resolveApiBaseUrl()}/api/user/userData`
 
 let weeklyPoints = 0
 let overallPoints = 0

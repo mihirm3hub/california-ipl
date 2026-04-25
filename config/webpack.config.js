@@ -62,6 +62,11 @@ const config = {
       inject: false,
     }),
     new HtmlWebpackPlugin({
+      template: path.join(srcPath, 'benefit-collection.html'),
+      filename: 'benefit-collection.html',
+      inject: false,
+    }),
+    new HtmlWebpackPlugin({
       template: path.join(srcPath, 'missing-out.html'),
       filename: 'missing-out.html',
       inject: false,

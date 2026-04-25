@@ -1,17 +1,49 @@
 import { benefitMessages } from './lib/benefitMessages'
+import { resolveApiBaseUrl } from './lib/cricketApi'
 
 const rewardCycleStateStorageKey = 'almondRewardCycleState'
-const userDataApiEndpoint = `${resolveApiBaseUrl()}api/user/userData`
+const totalBenefitCount = 12
+const userDataApiEndpoint = `${resolveApiBaseUrl()}/api/user/userData`
 
 let weeklyPoints = 0
 let overallPoints = 0
 let unlockedBenefitsCount = 0
+
+const renderWeeklyPoints = () => {
+  const weeklyScoreEl = document.getElementById('WeeklyScoreText')
+  if (!weeklyScoreEl) {
+    return
+  }
+
+  weeklyScoreEl.textContent = String(Math.max(0, Number(weeklyPoints) || 0))
+}
+
+const normalizeBenefitKey = (value) =>
+  String(value || '')
+    .replace(/\s+unlocked$/i, '')
+    .trim()
+    .toUpperCase()
+
+const renderBenefitCount = () => {
+  const benefitCountEl = document.getElementById('BenefitCount')
+  if (!benefitCountEl) {
+    return
+  }
+
+  const safeBenefitCount = Math.min(
+    totalBenefitCount,
+    Math.max(0, Number(unlockedBenefitsCount) || 0),
+  )
+
+  benefitCountEl.textContent = `${safeBenefitCount}/${totalBenefitCount}`
+}
 
 const fetchUserData = async () => {
   const authToken = sessionStorage.getItem('authToken') || ''
 
   if (!authToken) {
     console.warn('authToken is missing in sessionStorage')
+    renderWeeklyPoints()
     return null
   }
 
@@ -38,9 +70,14 @@ const fetchUserData = async () => {
       ? userData.almondBenefitsUnlocked.length
       : 0
 
+    renderWeeklyPoints()
+    renderBenefitCount()
+
     return userData
   } catch (error) {
     console.error('Error fetching userData', error)
+    renderWeeklyPoints()
+    renderBenefitCount()
     return null
   }
 }
@@ -103,12 +140,6 @@ const matchRewardMessages = [
     description: 'Almonds have Magnesium and B vitamins that help in sustaining energy for long innings.',
   },
 ]
-
-const normalizeBenefitKey = (value) =>
-  String(value || '')
-    .replace(/\s+unlocked$/i, '')
-    .trim()
-    .toUpperCase()
 
 const getRewardCycleState = () => {
   if (typeof window === 'undefined' || !window.localStorage) {
@@ -220,6 +251,9 @@ const initRewardPopupContent = () => {
     const safePoints = Number(points) >= 50 ? 50 : 10
     const nextMessage = getNextMessage(points)
 
+    weeklyPoints += safePoints
+    renderWeeklyPoints()
+
     if (popupPointsText) {
       popupPointsText.textContent = `${safePoints} POINTS`
     }
@@ -231,6 +265,7 @@ const initRewardPopupContent = () => {
     if (popupDesc && nextMessage?.description) {
       popupDesc.textContent = nextMessage.description
     }
+
   }
 }
 
@@ -354,6 +389,8 @@ const initIdleStateRedirect = () => {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
+  renderWeeklyPoints()
+  renderBenefitCount()
   initLookAroundToggle()
   initRewardPopupContent()
   initHamburgerMenu()

@@ -497,7 +497,7 @@ export const entitySpawnerComponent = {
             console.warn("[api] JWT token not found; skipping score submission.");
             return
           }
-          const apiUrl = `${resolveApiBaseUrl()}api/gameplay/progress/submit`;
+          const apiUrl = `${resolveApiBaseUrl()}/api/gameplay/progress/submit`;
           const benefit = {
             id: "benefit_heart_health",
             benefit: "Heart Health"

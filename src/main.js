@@ -96,7 +96,7 @@ const saveRewardCycleState = (matchRewardIndex, idleRewardIndex) => {
 
   window.localStorage.setItem(
     rewardCycleStateStorageKey,
-    JSON.stringify({matchRewardIndex, idleRewardIndex}),
+    JSON.stringify({ matchRewardIndex, idleRewardIndex }),
   )
 }
 
@@ -188,7 +188,6 @@ const initRewardPopupContent = () => {
     if (popupDesc && nextMessage?.description) {
       popupDesc.textContent = nextMessage.description
     }
-
   }
 }
 
@@ -199,6 +198,12 @@ const initHamburgerMenu = () => {
   if (!hamburger || !mobileMenu) {
     return
   }
+
+  if (hamburger.dataset.menuBound === '1') {
+    return
+  }
+
+  hamburger.dataset.menuBound = '1'
 
   const openMenu = () => {
     hamburger.classList.add('active')
@@ -248,34 +253,58 @@ const initHamburgerMenu = () => {
   })
 }
 
-const initMissingOutIdleRedirect = () => {
-  const idleMs = 5 * 60 * 1000
-  const redirectUrl = 'missing-out.html'
-  let idleTimerId = null
+window.initHamburgerMenu = initHamburgerMenu
 
-  const redirectToMissingOut = () => {
-    window.location.href = redirectUrl
+const initIdleStateRedirect = () => {
+  let idleTimerId = null
+  const idleTimeoutMs = 5 * 60 * 1000
+  let resolvedMissingOutPath = null
+
+  const resolveMissingOutPath = async () => {
+    if (resolvedMissingOutPath) {
+      return resolvedMissingOutPath
+    }
+
+    const candidatePaths = [
+      'missing-out.html',
+      '/missing-out.html',
+      'dist/missing-out.html',
+      '/dist/missing-out.html',
+      'src/missing-out.html',
+      '/src/missing-out.html',
+    ]
+
+    for (const path of candidatePaths) {
+      try {
+        const response = await window.fetch(path, { method: 'GET', cache: 'no-store' })
+        if (response.ok) {
+          resolvedMissingOutPath = path
+          return resolvedMissingOutPath
+        }
+      } catch (error) {
+        // Try next candidate.
+      }
+    }
+
+    resolvedMissingOutPath = 'missing-out.html'
+    return resolvedMissingOutPath
+  }
+
+  const goToMissingOut = async () => {
+    const targetPath = await resolveMissingOutPath()
+    console.log(`Redirecting to ${targetPath} due to inactivity`)
+    window.location.href = targetPath
   }
 
   const resetIdleTimer = () => {
     if (idleTimerId) {
       window.clearTimeout(idleTimerId)
     }
-
-    idleTimerId = window.setTimeout(redirectToMissingOut, idleMs)
+    idleTimerId = window.setTimeout(goToMissingOut, idleTimeoutMs)
   }
 
-  const activityEvents = [
-    'click',
-    'keydown',
-    'mousemove',
-    'pointerdown',
-    'scroll',
-    'touchstart',
-  ]
-
-  activityEvents.forEach((eventName) => {
-    window.addEventListener(eventName, resetIdleTimer, {passive: true})
+  ;['click', 'keydown', 'mousemove', 'pointerdown', 'scroll', 'touchstart'].forEach((eventName) => {
+    window.addEventListener(eventName, resetIdleTimer, { passive: true })
   })
 
   resetIdleTimer()
@@ -285,5 +314,5 @@ window.addEventListener('DOMContentLoaded', () => {
   initLookAroundToggle()
   initRewardPopupContent()
   initHamburgerMenu()
-  initMissingOutIdleRedirect()
+  initIdleStateRedirect()
 })

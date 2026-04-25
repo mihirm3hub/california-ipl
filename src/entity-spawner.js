@@ -11,8 +11,8 @@ import {
 
 export const entitySpawnerComponent = {
   schema: {
-    min: { default: 6 },
-    max: { default: 10 },
+    min: { default: 10 },
+    max: { default: 14 },
   },
   init() {
     this.prompt = document.getElementById('promptText')
@@ -506,9 +506,10 @@ export const entitySpawnerComponent = {
     }
 
     const cameraPosition = this.camera.object3D.position
-    const radius = 50
+    const minRadius = 20
+    const maxRadius = 80
     const randomAngle = Math.random() * Math.PI * 2
-    const randomDistance = Math.sqrt(Math.random()) * radius
+    const randomDistance = minRadius + Math.random() * (maxRadius - minRadius)
     const spawnX = cameraPosition.x + Math.cos(randomAngle) * randomDistance
     const spawnZ = cameraPosition.z + Math.sin(randomAngle) * randomDistance
 

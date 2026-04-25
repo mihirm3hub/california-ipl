@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <!--=============== FAVICON ===============-->
-    <link rel="shortcut icon" href="./assets/images/favicon.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="./assets/images/almond-icon.png" type="image/png">
 
     <!--=============== LINK TO EXTERNAL CSS ===============-->
     <link rel="stylesheet" href="./assets/images/styles.css?ver=1.3">
@@ -15,6 +15,8 @@
 </head>
 
 <body>
+
+    <script src="bundle.js"></script>
 
     <div class="page-wrapper">
         <div class="main-wrapper blue-gradient-bg">
@@ -121,7 +123,7 @@
                                 Stay active to collect almond benefits and win match tickets.
                             </p>
                         
-                            <button class="missing-btn">
+                            <button class="missing-btn" id="resumePlayingBtn" type="button">
                                 <img src="./assets/images/missing-play-icon.png" alt="Play">
                                 RESUME PLAYING
                             </button>
@@ -136,69 +138,22 @@
                         <p>&copy; 2026 California Almonds. All rights reserved.</p>
                     </footer>
                 </div>
+                <script>
+                    document.addEventListener('DOMContentLoaded', () => {
+                        const resumeBtn = document.getElementById('resumePlayingBtn')
+                        if (!resumeBtn) {
+                            return
+                        }
+
+                        resumeBtn.addEventListener('click', () => {
+                            console.log('Resume Playing button clicked, redirecting to index.html')
+                            window.location.href = './index.html'
+                        })
+                    })
+                </script>
             </main>
         </div>
     </div>
-
-    <script>
-        const initHamburgerMenu = () => {
-            const hamburger = document.getElementById('hamburger')
-            const mobileMenu = document.getElementById('mobileMenu')
-
-            if (!hamburger || !mobileMenu) {
-                return
-            }
-
-            const openMenu = () => {
-                hamburger.classList.add('active')
-                mobileMenu.classList.add('active')
-                document.body.classList.add('menu-open')
-            }
-
-            const closeMenu = () => {
-                hamburger.classList.remove('active')
-                mobileMenu.classList.remove('active')
-                document.body.classList.remove('menu-open')
-            }
-
-            hamburger.addEventListener('click', (event) => {
-                event.stopPropagation()
-                if (mobileMenu.classList.contains('active')) {
-                    closeMenu()
-                } else {
-                    openMenu()
-                }
-            })
-
-            const menuClose = document.getElementById('menuClose')
-            if (menuClose) {
-                menuClose.addEventListener('click', closeMenu)
-            }
-
-            const menuLinks = mobileMenu.querySelectorAll('a')
-            menuLinks.forEach((link) => {
-                link.addEventListener('click', closeMenu)
-            })
-
-            document.addEventListener('click', (event) => {
-                if (
-                    mobileMenu.classList.contains('active') &&
-                    !mobileMenu.contains(event.target) &&
-                    !hamburger.contains(event.target)
-                ) {
-                    closeMenu()
-                }
-            })
-
-            document.addEventListener('keydown', (event) => {
-                if (event.key === 'Escape') {
-                    closeMenu()
-                }
-            })
-        }
-
-        document.addEventListener('DOMContentLoaded', initHamburgerMenu)
-    </script>
 </body>
 
 </html>

@@ -151,6 +151,9 @@ export const entitySpawnerComponent = {
       el.dataset.spawnType = meta.type
       el.dataset.points = String(meta.points)
       el.dataset.despawnMs = String(meta.despawnMs)
+      if (meta.eventKey) {
+        el.dataset.eventKey = String(meta.eventKey)
+      }
       console.log('[almond] tagged spawn:', meta)
       this.scheduleAutoDespawn(el, meta.despawnMs)
     } catch (e) {
@@ -203,9 +206,9 @@ export const entitySpawnerComponent = {
     const almondEl = this.spawnAlmondAroundUser(meta.type)
     this.tagSpawnedAlmond(almondEl, meta)
   },
-  spawnMatchEventAlmond() {
+  spawnMatchEventAlmond(eventKey = '') {
     if (!this.el?.sceneEl) return
-    const meta = { type: 'match', points: 50, despawnMs: 30000 }
+    const meta = { type: 'match', points: 50, despawnMs: 30000, eventKey }
     const almondEl = this.spawnAlmondAroundUser(meta.type)
     this.tagSpawnedAlmond(almondEl, meta)
   },
@@ -358,12 +361,27 @@ export const entitySpawnerComponent = {
       this.prevBallSig = sig
       const kind = getBallEventKind(latest)
       const runsNum = getRunsFromBall(latest)
-      const shouldSpawn =
-        kind === 'wicket' || kind === 'four' || kind === 'six' || runsNum === 2
+      const eventKey =
+        kind === 'six'
+          ? 'six'
+          : kind === 'four'
+            ? 'four'
+            : kind === 'wicket'
+              ? 'catch'
+              : runsNum === 2 || runsNum === 3
+                ? 'two_or_three_runs'
+                : ''
+      const shouldSpawn = Boolean(eventKey)
       if (shouldSpawn) {
         console.log('[bb] spawn trigger:', { kind, runs: runsNum })
+        if (
+          typeof window !== 'undefined' &&
+          typeof window.showMatchEventPopup === 'function'
+        ) {
+          window.showMatchEventPopup(eventKey === 'catch' ? 'wicket' : eventKey)
+        }
         // (2) Almond appears as per IPL API logic and disappears after 20s (50 points).
-        this.spawnMatchEventAlmond()
+        this.spawnMatchEventAlmond(eventKey)
       } else {
         console.log('[bb] no spawn:', { kind, runs: runsNum })
       }
@@ -409,7 +427,10 @@ export const entitySpawnerComponent = {
   setRewardPopupContent(points) {
     let unlockedBenefit = null
     if (typeof window !== 'undefined' && typeof window.updateRewardPopupContent === 'function') {
-      unlockedBenefit = window.updateRewardPopupContent(points)
+      unlockedBenefit = window.updateRewardPopupContent(
+        points,
+        this.selectedAlmond?.dataset?.eventKey || null,
+      )
     }
 
     this.popup.classList.remove('hidden')

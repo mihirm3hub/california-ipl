@@ -10,221 +10,237 @@
   <meta name="twitter:title" content="A-Frame: Tap to Place Ground">
   <meta property="og:title" content="A-Frame: Tap to Place Ground">
   <meta property="og:site_name" content="A-Frame: Tap to Place Ground">
-  <meta name="description" content="This example spawns almonds around the user and supports click or touch interactions with popup feedback. Showcases spawning objects and importing a 3D model.">
-  <meta itemprop="description" content="This example spawns almonds around the user and supports click or touch interactions with popup feedback. Showcases spawning objects and importing a 3D model.">
-  <meta property="og:description" content="This example spawns almonds around the user and supports click or touch interactions with popup feedback. Showcases spawning objects and importing a 3D model.">
-  <meta name="twitter:description" content="This example spawns almonds around the user and supports click or touch interactions with popup feedback. Showcases spawning objects and importing a 3D model.">
+  <meta name="description"
+    content="This example spawns almonds around the user and supports click or touch interactions with popup feedback. Showcases spawning objects and importing a 3D model.">
+  <meta itemprop="description"
+    content="This example spawns almonds around the user and supports click or touch interactions with popup feedback. Showcases spawning objects and importing a 3D model.">
+  <meta property="og:description"
+    content="This example spawns almonds around the user and supports click or touch interactions with popup feedback. Showcases spawning objects and importing a 3D model.">
+  <meta name="twitter:description"
+    content="This example spawns almonds around the user and supports click or touch interactions with popup feedback. Showcases spawning objects and importing a 3D model.">
   <script crossorigin="anonymous" src="./external/scripts/8frame-1.5.0.min.js"></script>
   <script crossorigin="anonymous" src="./external/xrextras/xrextras.js"></script>
   <script crossorigin="anonymous" src="./external/landing-page/landing-page.js"></script>
   <script crossorigin="anonymous" src="./external/xr/xr.js" async="true" data-preload-chunks="slam"></script>
   <script src="https://unpkg.com/aframe-look-at-component@0.8.0/dist/aframe-look-at-component.min.js"></script>
-  
 
-<!-- Copyright (c) 2024 8th Wall, Inc. -->
-<!-- head.html is optional; elements will be added to your html head before app.js is loaded. -->
 
-<!-- Use "8thwall:" meta tags to hook into 8th Wall's build process and developer tools. -->
-<meta name="8thwall:renderer" content="aframe:1.5.0"/>
-<meta name="8thwall:package" content="@8thwall.xrextras"/>
-<meta name="8thwall:package" content="@8thwall.landing-page"/>
+  <!-- Copyright (c) 2024 8th Wall, Inc. -->
+  <!-- head.html is optional; elements will be added to your html head before app.js is loaded. -->
 
-<!-- Add GIF for sharing -->
-<meta property="og:image" content="https://i.giphy.com/media/rAi32DNlsWNpItOpDr/giphy.gif"/>
+  <!-- Use "8thwall:" meta tags to hook into 8th Wall's build process and developer tools. -->
+  <meta name="8thwall:renderer" content="aframe:1.5.0" />
+  <meta name="8thwall:package" content="@8thwall.xrextras" />
+  <meta name="8thwall:package" content="@8thwall.landing-page" />
+
+  <!-- Add GIF for sharing -->
+  <meta property="og:image" content="https://i.giphy.com/media/rAi32DNlsWNpItOpDr/giphy.gif" />
 
 </head>
 
 <body>
-<script src="bundle.js"></script>
-<!-- Copyright (c) 2022 8th Wall, Inc. -->
-<!-- body.html is optional; elements will be added to your html body after app.js is loaded. -->
+  <script src="bundle.js"></script>
+  <!-- Copyright (c) 2022 8th Wall, Inc. -->
+  <!-- body.html is optional; elements will be added to your html body after app.js is loaded. -->
 
-<div class="page-wrapper">
-  <div class="main-wrapper">
-    <!-- <div class="bg-wrap" aria-hidden="true">
+  <div class="page-wrapper">
+    <div class="main-wrapper">
+      <!-- <div class="bg-wrap" aria-hidden="true">
       <div class="ingame-bg"></div>
     </div> -->
+      <div id="loaderScreen" class="screen-container">
+        <!-- LOADER SCREEN -->
+        <div class="loader-screen" id="">
+          <div class="loader-inner">
 
-    <div id="loadingScreen" class="loading-screen" aria-live="polite" aria-busy="true">
-      <img class="loading-logo" src="./logoM.png" alt="Logo">
-      <div class="loading-spinner" aria-hidden="true"></div>
-      <p class="loading-label">Loading experience...</p>
-    </div>
+            <!-- MASK BOX -->
+            <div class="logo-mask">
+              <img src="assets/images/superfood-logo.png" class="logo-full">
+            </div>
 
-    <main class="screen-container tap-earn-screen">
-      <header class="menu-header">
-        <img src="./assets/images/superfood-logo.png" class="main-logo" alt="California Almonds Superfood for a Super You">
+            <!-- TEXT -->
+            <p class="loader-text" id="loaderText">Uploading prizes...</p>
 
-        <button id="hamburger" class="hamburger" type="button" aria-label="Open menu">
-          <span></span>
-          <span></span>
-          <span></span>
-        </button>
-      </header>
+          </div>
+        </div>
+      </div>
 
-      <!-- Mobile Menu -->
-      <div class="mobile-menu" id="mobileMenu">
+      <!-- <div id="loadingScreen" class="loading-screen" aria-live="polite" aria-busy="true">
+        <img class="loading-logo" src="./logoM.png" alt="Logo">
+        <div class="loading-spinner" aria-hidden="true"></div>
+        <p class="loading-label">Loading experience...</p>
+      </div> -->
+
+      <main class="screen-container tap-earn-screen">
+        <header class="menu-header">
+          <img src="./assets/images/superfood-logo.png" class="main-logo"
+            alt="California Almonds Superfood for a Super You">
+
+          <button id="hamburger" class="hamburger" type="button" aria-label="Open menu">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+        </header>
+
+                        <!-- MOBILE MENU START -->
+                <div class="mobile-menu" id="mobileMenu">
                 
-        <!-- Background -->
-        <img src="assets/images/offcanvas-stadium-bg.png" class="menu-bg" alt="Stadium Background">
-    
-        <!-- Close -->
-        <div class="menu-close" id="menuClose">✕</div>
-    
-        <!-- Menu Items -->
-        <div class="menu-content">
-    
-            <a href="profile.html" class="menu-item">
-                <img src="assets/images/profile-icon.png" alt="Profile Icon">
-                <span>PROFILE</span>
-            </a>
-    
-            <a href="how-to-play.html" class="menu-item">
-                <img src="assets/images/how-to-play-icon.png" alt="How to play Icon">
-                <span>HOW TO PLAY</span>
-            </a>
-    
-            <a href="benefits.html" class="menu-item">
-                <img src="assets/images/benefits-icon.png" alt="Benefits Icon">
-                <span>BENEFITS COLLECTION</span>
-            </a>
-    
-            <a href="winners.html" class="menu-item">
-                <img src="assets/images/winners-icon.png" alt="Winners Icon">
-                <span>WINNERS</span>
-            </a>
-    
-            <a href="faqs.html" class="menu-item">
-                <img src="assets/images/faq-icon.png" alt="Faq Icon">
-                <span>FAQS</span>
-            </a>
-    
-            <a href="terms.html" class="menu-item">
-                <img src="assets/images/terms-icon.png" alt="Terms Icon">
-                <span>TERMS &amp; CONDITIONS</span>
-            </a>
-    
-            <a href="contact.html" class="menu-item">
-                <img src="assets/images/contact-icon.png" alt="Contact Icon">
-                <span>CONTACT US</span>
-            </a>
-    
-        </div>
-    
-        <!-- Logout -->
-        <div class="menu-logout">
-            <img src="assets/images/logout-icon.png">
-            <span>LOGOUT</span>
-        </div>
-    
-    </div>
+                    <!-- Background -->
+                    <img src="assets/images/offcanvas-stadium-bg.png" class="menu-bg" alt="Stadium Background">
+                
+                    <!-- Close -->
+                    <div class="menu-close" id="menuClose">✕</div>
+                
+                    <!-- Menu Items -->
+                    <div class="menu-content">
+                
+                        <a href="profile.html" class="menu-item">
+                            <img src="assets/images/profile-icon.png" alt="Profile Icon">
+                            <span>PROFILE</span>
+                        </a>
+                
+                        <a href="how-to-play.html" class="menu-item">
+                            <img src="assets/images/how-to-play-icon.png" alt="How to play Icon">
+                            <span>HOW TO PLAY</span>
+                        </a>
+                
+                        <a href="benefits.html" class="menu-item">
+                            <img src="assets/images/benefits-icon.png" alt="Benefits Icon">
+                            <span>BENEFITS COLLECTION</span>
+                        </a>
+                
+                        <a href="winners.html" class="menu-item">
+                            <img src="assets/images/winners-icon.png" alt="Winners Icon">
+                            <span>WINNERS</span>
+                        </a>
+                
+                        <a href="faqs.html" class="menu-item">
+                            <img src="assets/images/faq-icon.png" alt="Faq Icon">
+                            <span>FAQS</span>
+                        </a>
+                
+                        <a href="terms.html" class="menu-item">
+                            <img src="assets/images/terms-icon.png" alt="Terms Icon">
+                            <span>TERMS & CONDITIONS</span>
+                        </a>
+                
+                        <a href="contact.html" class="menu-item">
+                            <img src="assets/images/contact-icon.png" alt="Contact Icon">
+                            <span>CONTACT US</span>
+                        </a>
+                
+                    </div>
+                
+                    <!-- Logout -->
+                    <div class="menu-logout">
+                        <img src="assets/images/logout-icon.png">
+                        <span>LOGOUT</span>
+                    </div>
+                
+                </div>
+                <!-- MOBILE MENU END -->
 
-      <div class="main-content">
-        <div class="ingame-stats">
-          <div class="glass-card">
-            <img src="./assets/images/weekly-points-icon.png" class="img-fit" alt="Weekly Points Icon">
-            <div class="stat-text">
-              <p>Weekly Points</p>
-              <h3 id="WeeklyScoreText" aria-label="Score">0</h3>
+        <div class="main-content">
+          <div class="ingame-stats">
+            <div class="glass-card">
+              <img src="./assets/images/weekly-points-icon.png" class="img-fit" alt="Weekly Points Icon">
+              <div class="stat-text">
+                <p>Weekly Points</p>
+                <h3 id="WeeklyScoreText" aria-label="Score">0</h3>
+              </div>
+            </div>
+
+            <div class="glass-card">
+              <img src="assets/images/almond-icon.png" class="img-fit" alt="Almond Icon">
+              <div class="stat-text">
+                <p>Almond Benefits</p>
+                <h3 id="BenefitCount">0/12</h3>
+              </div>
             </div>
           </div>
+        </div>
 
-          <div class="glass-card">
-            <img src="assets/images/almond-icon.png" class="img-fit" alt="Almond Icon">
-            <div class="stat-text">
-              <p>Almond Benefits</p>
-              <h3 id="BenefitCount">0/12</h3>
+        <div class="look-section">
+          <div class="look-icons">
+            <img src="assets/images/pointing.png" class="pointing-icon" alt="Tap Pointing Icon">
+          </div>
+
+          <div class="look-content">
+            <div class="arrow-zone left" role="button" tabindex="0" aria-label="Show look around hint">
+              <div class="arrow left">
+                <img src="assets/images/arrow-small-left.png" class="small" alt="Arrow Icon">
+                <img src="assets/images/arrow-big-left.png" class="big" alt="Arrow Icon">
+              </div>
+            </div>
+
+            <div class="look-text" id="lookTextBlock">
+              <p id="promptText" class="look-message-default">Tap them to earn points and collect benefits.</p>
+              <div class="look-around-hint" id="lookAroundHint">
+                <p class="look-message-hint">LOOK AROUND FOR</p>
+                <h3>
+                  <img src="assets/images/almond-look-icon.png" alt="Almond Icon">
+                  ALMONDS.
+                </h3>
+              </div>
+            </div>
+
+            <div class="arrow-zone right" role="button" tabindex="0" aria-label="Show look around hint">
+              <div class="arrow right">
+                <img src="assets/images/arrow-big-right.png" class="big" alt="Arrow Icon">
+                <img src="assets/images/arrow-small-right.png" class="small" alt="Arrow Icon">
+              </div>
             </div>
           </div>
         </div>
+      </main>
+
+      <div class="live-status" aria-live="polite">
+        <span class="live-dot"></span>
+        <p>Not Connected to Live Match</p>
       </div>
 
-      <div class="look-section">
-        <div class="look-icons">
-          <img src="assets/images/pointing.png" class="pointing-icon" alt="Tap Pointing Icon">
-        </div>
-
-        <div class="look-content">
-          <div class="arrow-zone left" role="button" tabindex="0" aria-label="Show look around hint">
-            <div class="arrow left">
-              <img src="assets/images/arrow-small-left.png" class="small" alt="Arrow Icon">
-              <img src="assets/images/arrow-big-left.png" class="big" alt="Arrow Icon">
-            </div>
-          </div>
-
-          <div class="look-text" id="lookTextBlock">
-            <p id="promptText" class="look-message-default">Tap them to earn points and collect benefits.</p>
-            <div class="look-around-hint" id="lookAroundHint">
-              <p class="look-message-hint">LOOK AROUND FOR</p>
-              <h3>
-                <img src="assets/images/almond-look-icon.png" alt="Almond Icon">
-                ALMONDS.
-              </h3>
-            </div>
-          </div>
-
-          <div class="arrow-zone right" role="button" tabindex="0" aria-label="Show look around hint">
-            <div class="arrow right">
-              <img src="assets/images/arrow-big-right.png" class="big" alt="Arrow Icon">
-              <img src="assets/images/arrow-small-right.png" class="small" alt="Arrow Icon">
-            </div>
-          </div>
+      <!-- Popup Overlay Start -->
+      <div class="game-overlay" id="gameOverlay">
+        <div class="six-popup" id="sixPopup">
+          <p id="matchEventLead">IT'S A</p>
+          <h2 id="matchEventValue">SIX!!</h2>
         </div>
       </div>
-    </main>
+      <!-- Popup Overlay End -->
 
-    <div class="live-status" aria-live="polite">
-      <span class="live-dot"></span>
-      <p>Not Connected to Live Match</p>
-    </div>
+      <!-- Popup Overlay Start - Reward Points -->
+      <div id="almondPopup" class="reward-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="rewardTitle">
+        <div class="reward-card">
+          <button class="reward-close" id="rewardClose" type="button" aria-label="Close">✕</button>
 
-    <!-- Popup Overlay Start -->
-    <div class="game-overlay" id="gameOverlay">
-      <div class="six-popup" id="sixPopup">
-        <p>IT'S A</p>
-        <h2>SIX!</h2>
-      </div>
-    </div>
-    <!-- Popup Overlay End -->
+          <div class="reward-points">
+            <img src="./assets/images/overall-points-icon.png" alt="Points Icon" class="points-icon">
+            <span id="rewardPointsText">50 POINTS</span>
+          </div>
 
-    <!-- Popup Overlay Start - Reward Points -->
-    <div id="almondPopup" class="reward-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="rewardTitle">
-      <div class="reward-card">
-        <button class="reward-close" id="rewardClose" type="button" aria-label="Close">✕</button>
+          <h2 class="reward-title" id="rewardTitle">BONE STRENGTH<br>COLLECTED</h2>
 
-        <div class="reward-points">
-          <img src="./assets/images/overall-points-icon.png" alt="Points Icon" class="points-icon">
-          <span id="rewardPointsText">50 POINTS</span>
+          <p class="reward-desc" id="rewardDesc">
+            Almonds have Calcium that helps keep your bones strong for epic shots.
+          </p>
+
+          <button class="reward-btn secondary" type="button" onclick="window.location.href='benefit-collection.html';">
+            VIEW YOUR COLLECTION
+          </button>
+          <button id="popupOkBtn" class="reward-btn primary" type="button">
+            <img src="./assets/images/play-button.png" class="play-icon" alt="Play Icon">
+            RESUME PLAYING
+          </button>
         </div>
-
-        <h2 class="reward-title" id="rewardTitle">BONE STRENGTH<br>COLLECTED</h2>
-
-        <p class="reward-desc" id="rewardDesc">
-          Almonds have Calcium that helps keep your bones strong for epic shots.
-        </p>
-
-        <button class="reward-btn secondary" type="button" onclick="window.location.href='benefit-collection.html';">
-          VIEW YOUR COLLECTION
-        </button>
-        <button id="popupOkBtn" class="reward-btn primary" type="button">
-          <img src="./assets/images/play-button.png" class="play-icon" alt="Play Icon">
-          RESUME PLAYING
-        </button>
       </div>
+      <!-- Popup Overlay End - Reward Points -->
     </div>
-    <!-- Popup Overlay End - Reward Points -->
   </div>
-</div>
 
-<!-- Add the entity-swapner component to the scene so it has an effect -->
-<a-scene
-  render-order="background, foreground"
-  xrextras-gesture-detector
-  entity-spawner
-  landing-page
-  xrextras-runtime-error
-  renderer="colorManagement:true"
-  xrweb="
+  <!-- Add the entity-swapner component to the scene so it has an effect -->
+  <a-scene render-order="background, foreground" xrextras-gesture-detector entity-spawner landing-page
+    xrextras-runtime-error renderer="colorManagement:true" xrweb="
     allowedDevices: any;
     defaultEnvironmentFogIntensity: 0.5; 
     defaultEnvironmentFloorTexture: #groundTex; 
@@ -233,44 +249,26 @@
     defaultEnvironmentSkyTopColor: #5ac8fa;
     defaultEnvironmentSkyGradientStrength: 0.5;">
 
-  <!-- We can define assets here to be loaded when A-Frame initializes -->
-  <a-assets>
-    <img id="groundTex" crossorigin="anonymous" src="">
-    <img id="glowTex" crossorigin="anonymous" src="./Ellipse.png">
-    <img id="glowTexYellow" crossorigin="anonymous" src="./Ellipse-yellow.png">
-    <a-asset-item id="almondModel" crossorigin="anonymous" src="./almond.glb"></a-asset-item>
-    <video
-      id="alpha-video"
-      muted
-      autoplay
-      playsinline
-      crossorigin="anonymous"
-      loop="true"
-      src="./2.mp4#t=0.001">
-    </video>
-    <video
-      id="sparkle-video"
-      muted
-      autoplay
-      playsinline
-      crossorigin="anonymous"
-      loop="true"
-      src="./sparkles.mp4#t=0.001">
-    </video>
-  </a-assets>
+    <!-- We can define assets here to be loaded when A-Frame initializes -->
+    <a-assets>
+      <img id="groundTex" crossorigin="anonymous" src="">
+      <img id="glowTex" crossorigin="anonymous" src="./Ellipse.png">
+      <img id="glowTexYellow" crossorigin="anonymous" src="./Ellipse-yellow.png">
+      <a-asset-item id="almondModel" crossorigin="anonymous" src="./almond.glb"></a-asset-item>
+      <video id="alpha-video" muted autoplay playsinline crossorigin="anonymous" loop="true" src="./2.mp4#t=0.001">
+      </video>
+      <video id="sparkle-video" muted autoplay playsinline crossorigin="anonymous" loop="true"
+        src="./sparkles.mp4#t=0.001">
+      </video>
+    </a-assets>
 
-  <!-- The raycaster will emit mouse events on scene objects specified with the cantap class -->
-  <a-camera
-    id="camera"
-    position="0 8 8"
-    raycaster="objects: .cantap"
-    cursor="
+    <!-- The raycaster will emit mouse events on scene objects specified with the cantap class -->
+    <a-camera id="camera" position="0 8 8" raycaster="objects: .cantap" cursor="
       fuse: false;
       rayOrigin: mouse;">
-  </a-camera>
+    </a-camera>
 
-  <a-entity
-    light="
+    <a-entity light="
       type: directional;
       intensity: 0.8;
       castShadow: true;
@@ -280,16 +278,13 @@
       shadowCameraBottom: -40;
       shadowCameraRight: 40;
       shadowCameraLeft: -40;
-      target: #camera"
-    xrextras-attach="target: camera; offset: 8 15 4"
-    position="1 4.3 2.5"
-    shadow>
-  </a-entity>
+      target: #camera" xrextras-attach="target: camera; offset: 8 15 4" position="1 4.3 2.5" shadow>
+    </a-entity>
 
-  <a-light type="ambient" intensity="0.5"></a-light>
+    <a-light type="ambient" intensity="0.5"></a-light>
 
-  <!-- Adding the cantap class allows the ground to be clicked -->
-  <!-- <a-box
+    <!-- Adding the cantap class allows the ground to be clicked -->
+    <!-- <a-box
     id="ground"
     class="cantap"
     scale="1000 2 1000"
@@ -297,7 +292,7 @@
     material="shader: shadow; transparent: true; opacity: 0.4"
     shadow>
   </a-box> -->
-</a-scene>
+  </a-scene>
 
 </body>
 

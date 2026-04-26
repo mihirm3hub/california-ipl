@@ -7,11 +7,11 @@ import './index.css'
 import './main'
 
 AFRAME.registerComponent('no-cull', {
-  init() {
-    this.el.addEventListener('model-loaded', () => {
-      this.el.object3D.traverse(obj => obj.frustumCulled = false)
-    })
-  },
+    init() {
+        this.el.addEventListener('model-loaded', () => {
+            this.el.object3D.traverse(obj => obj.frustumCulled = false)
+        })
+    },
 })
 // Register custom A-Frame components in app.js before the scene in body.html has loaded.
 import { entitySpawnerComponent } from './entity-spawner'
@@ -23,17 +23,62 @@ AFRAME.registerShader('chromakey', chromaKeyShader)
 import { playVideoComponent } from './play-video'
 AFRAME.registerComponent('play-video', playVideoComponent)
 
+let hasStartedLoaderSequence = false
+
 const hideLoadingScreen = () => {
-    const loadingScreen = document.getElementById('loadingScreen')
-    if (!loadingScreen) {
+    if (hasStartedLoaderSequence) {
         return
     }
+
+    const loader = document.getElementById("loaderScreen");
+    const loaderSurface = loader?.querySelector(".loader-screen");
+    const loaderText = document.getElementById("loaderText");
+    if (!loader) {
+        return
+    }
+
+    hasStartedLoaderSequence = true
+
+    if (loader && loaderText) {
+        const texts = ["Uploading prizes...", "Downloading almonds...", "Activating health benefits...", "Loading superfood..."];
+
+        function changeText(i) {
+            // remove class
+            loaderText.classList.remove("loader-text-change");
+
+            // 🔥 HARD RESET (important)
+            loaderText.style.animation = "none";
+
+            // force reflow
+            loaderText.offsetHeight;
+
+            // set text
+            loaderText.textContent = texts[i];
+
+            // reapply animation
+            loaderText.style.animation = "";
+            loaderText.classList.add("loader-text-change");
+        }
+
+        // 🔥 FIRST TEXT ANIMATION (missing before)
+        changeText(0);
+
+        // 🔥 PERFECTLY MATCHED WITH CSS KEYFRAMES (3.5s total)
+        setTimeout(() => changeText(1), 1050); // ~30%
+        setTimeout(() => changeText(2), 2100); // ~60%
+        setTimeout(() => changeText(3), 3000); // ~85%
+
+    }
+    // HIDE
     setTimeout(() => {
-        loadingScreen.classList.add('fade-out')
+        if (loaderSurface) {
+            loaderSurface.classList.add("loader-hide");
+        }
+
         setTimeout(() => {
-            loadingScreen.classList.add('hidden')
-        }, 1000)
-    }, 1000)
+            loader.style.display = "none";
+        }, 700);
+    }, 4200);
 }
 
 window.addEventListener('DOMContentLoaded', () => {

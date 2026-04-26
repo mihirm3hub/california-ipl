@@ -544,7 +544,7 @@ body.menu-open {
     padding: 20px;
 
     /* ✅ IMAGE BACKGROUND */
-    background: url('./assets/images/points-popup-bg.png') no-repeat center center;
+    background: url('https://stage.almondwin.com/game/d303c6cd0d5461ca53be.png') no-repeat center center;
     background-size: cover;
 
     text-align: center;

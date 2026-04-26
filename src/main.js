@@ -470,6 +470,12 @@ const initMatchEventPopup = () => {
     six: { lead: "IT'S A", value: 'SIX!!' },
     four: { lead: "IT'S A", value: 'FOUR!!' },
     wicket: { lead: "IT'S AN", value: 'OUT!!' },
+    catch: { lead: "IT'S AN", value: 'OUT!!' },
+    two_or_three_runs: { lead: "IT'S A", value: '2 OR 3 RUNS!!' },
+    last_over: { lead: "IT'S THE", value: 'LAST OVER!!' },
+    drs: { lead: "IT'S A", value: 'DRS!!' },
+    century: { lead: "IT'S A", value: 'CENTURY!!' },
+    half_century: { lead: "IT'S A", value: 'HALF CENTURY!!' },
   }
 
   window.showMatchEventPopup = (eventKind) => {

@@ -376,10 +376,9 @@ export const entitySpawnerComponent = {
         console.log('[bb] spawn trigger:', { kind, runs: runsNum })
         if (
           typeof window !== 'undefined' &&
-          typeof window.showMatchEventPopup === 'function' &&
-          (kind === 'wicket' || kind === 'four' || kind === 'six')
+          typeof window.showMatchEventPopup === 'function'
         ) {
-          window.showMatchEventPopup(kind)
+          window.showMatchEventPopup(eventKey === 'catch' ? 'wicket' : eventKey)
         }
         // (2) Almond appears as per IPL API logic and disappears after 20s (50 points).
         this.spawnMatchEventAlmond(eventKey)

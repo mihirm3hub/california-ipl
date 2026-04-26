@@ -326,6 +326,43 @@ const initRewardPopupContent = () => {
   }
 }
 
+const initMatchEventPopup = () => {
+  const overlay = document.getElementById('gameOverlay')
+  const leadText = document.getElementById('matchEventLead')
+  const valueText = document.getElementById('matchEventValue')
+
+  if (!overlay || !leadText || !valueText) {
+    return
+  }
+
+  let hideTimerId = null
+  const popupCopyByEvent = {
+    six: { lead: "IT'S A", value: 'SIX!!' },
+    four: { lead: "IT'S A", value: 'FOUR!!' },
+    wicket: { lead: "IT'S AN", value: 'OUT!!' },
+  }
+
+  window.showMatchEventPopup = (eventKind) => {
+    const copy = popupCopyByEvent[eventKind]
+    if (!copy) {
+      return
+    }
+
+    leadText.textContent = copy.lead
+    valueText.textContent = copy.value
+    overlay.classList.add('active')
+
+    if (hideTimerId) {
+      window.clearTimeout(hideTimerId)
+    }
+
+    hideTimerId = window.setTimeout(() => {
+      overlay.classList.remove('active')
+      hideTimerId = null
+    }, 3000)
+  }
+}
+
 const initHamburgerMenu = () => {
   const hamburger = document.getElementById('hamburger')
   const mobileMenu = document.getElementById('mobileMenu')
@@ -450,6 +487,7 @@ window.addEventListener('DOMContentLoaded', () => {
   renderBenefitCount()
   initLookAroundToggle()
   initRewardPopupContent()
+  initMatchEventPopup()
   initHamburgerMenu()
   initIdleStateRedirect()
   fetchUserData()

@@ -2311,11 +2311,7 @@ ul {
     align-items: center;
     justify-content: flex-start;
 
-<<<<<<< HEAD
     background: url('https://stage.almondwin.com/game/d303c6cd0d5461ca53be.png') no-repeat center;
-=======
-    background: url('./its-six-popup-bg.png') no-repeat center;
->>>>>>> 565d4918716f28675f93388174d7100e739aff92
     background-size: cover;
     box-shadow: 0 18px 44px rgba(14, 48, 93, 0.28);
 }

@@ -1,4 +1,3 @@
-import { benefitMessages } from './lib/benefitMessages'
 import { resolveApiBaseUrl } from './lib/cricketApi'
 
 const unlockedBenefitsStorageKey = 'almondUnlockedBenefits'
@@ -135,68 +134,152 @@ const fetchUserData = async () => {
   }
 }
 
-const matchRewardMessages = [
+const matchRewardMessagesByEvent = {
+  six: [
+    {
+      points: 50,
+      title: 'Bone Strength Unlocked',
+      description: 'Almonds have Calcium that helps keep your bones strong for epic shots.',
+    },
+    {
+      points: 50,
+      title: 'Muscle Strength Unlocked',
+      description: 'Almonds have Protein that helps build and preserve muscles for epic shots.',
+    },
+  ],
+  four: [
+    {
+      points: 50,
+      title: 'Bone Strength Unlocked',
+      description: 'Almonds have Calcium that helps keep your bones strong for epic shots.',
+    },
+    {
+      points: 50,
+      title: 'Muscle Strength Unlocked',
+      description: 'Almonds have Protein that helps build and preserve muscles for epic shots.',
+    },
+  ],
+  catch: [
+    {
+      points: 50,
+      title: 'Muscle Strength Unlocked',
+      description: 'Almonds have Protein that helps build and preserve muscles for epic catches.',
+    },
+    {
+      points: 50,
+      title: 'Sustained Energy Unlocked',
+      description: 'Almonds have Magnesium and B vitamins that help in sustaining energy for long innings.',
+    },
+  ],
+  two_or_three_runs: [
+    {
+      points: 50,
+      title: 'Heart Health Unlocked',
+      description:
+        'Almonds have Good Fats that help keep the heart healthy to keep running between the wickets.',
+    },
+  ],
+  last_over: [
+    {
+      points: 50,
+      title: 'Calm Nerves Unlocked',
+      description:
+        'Almonds have Magnesium that helps the body manage stressful moments like the last over.',
+    },
+    {
+      points: 50,
+      title: 'Sustained Energy Unlocked',
+      description: 'Almonds have Magnesium and B vitamins that help in sustaining energy for long innings.',
+    },
+  ],
+  drs: [
+    {
+      points: 50,
+      title: 'Calm Nerves Unlocked',
+      description:
+        'Almonds have Magnesium that helps the body manage stressful moments like waiting for a DRS result.',
+    },
+  ],
+  century: [
+    {
+      points: 50,
+      title: 'Heart Health Unlocked',
+      description:
+        'Almonds have Good Fats that help keep the heart healthy to keep running between the wickets.',
+    },
+    {
+      points: 50,
+      title: 'Sustained Energy Unlocked',
+      description: 'Almonds have Magnesium and B vitamins that help in sustaining energy for long innings.',
+    },
+  ],
+  half_century: [
+    {
+      points: 50,
+      title: 'Heart Health Unlocked',
+      description:
+        'Almonds have Good Fats that help keep the heart healthy to keep running between the wickets.',
+    },
+    {
+      points: 50,
+      title: 'Sustained Energy Unlocked',
+      description: 'Almonds have Magnesium and B vitamins that help in sustaining energy for long innings.',
+    },
+  ],
+}
+
+const idleRewardMessages = [
   {
-    title: 'Bone Strength Unlocked',
-    description: 'Almonds have Calcium that helps keep your bones strong for epic shots.',
+    points: 10,
+    title: 'Weight Management Unlocked',
+    description: 'Almonds have Protein, Fibre and Good Fats that help in managing weight.',
   },
   {
-    title: 'Muscle Strength Unlocked',
-    description: 'Almonds have Protein that helps build and preserve muscles for epic shots.',
+    points: 10,
+    title: 'Glowing Skin Unlocked',
+    description: 'Almonds have Vitamin E that helps your skin glow.',
   },
   {
-    title: 'Muscle Strength Unlocked',
-    description: 'Almonds have Protein that helps build and preserve muscles for epic catches.',
+    points: 10,
+    title: 'Gut Health Unlocked',
+    description: 'Almonds have Fibre that helps keep your gut healthy.',
   },
   {
-    title: 'Sustained Energy Unlocked',
-    description: 'Almonds have Magnesium and B vitamins that help in sustaining energy for long innings.',
+    points: 10,
+    title: 'Blood Sugar Control Unlocked',
+    description: 'Almonds have Protein, Fiber and Good fats that help keep your sugar in check.',
   },
   {
-    title: 'Bone Strength Unlocked',
-    description: 'Almonds have Calcium that helps keep your bones strong for epic shots.',
+    points: 10,
+    title: 'Hair Health Unlocked',
+    description: 'Almonds have Vitamin E that helps keep your hair healthy.',
   },
   {
-    title: 'Muscle Strength Unlocked',
-    description: 'Almonds have Protein that helps build and preserve muscles for epic shots.',
-  },
-  {
-    title: 'Heart Health Unlocked',
-    description: 'Almonds have Good Fats that help keep the heart healthy to keep running between the wickets.',
-  },
-  {
-    title: 'Calm Nerves Unlocked',
-    description: 'Almonds have Magnesium that helps the body manage stressful moments like the last over.',
-  },
-  {
-    title: 'Sustained Energy Unlocked',
-    description: 'Almonds have Magnesium and B vitamins that help in sustaining energy for long innings.',
-  },
-  {
-    title: 'Calm Nerves Unlocked',
-    description: 'Almonds have Magnesium that helps the body manage stressful moments like waiting for a DRS result.',
-  },
-  {
-    title: 'Heart Health Unlocked',
-    description: 'Almonds have Good Fats that help keep the heart healthy to keep running between the wickets.',
-  },
-  {
-    title: 'Sustained Energy Unlocked',
-    description: 'Almonds have Magnesium and B vitamins that help in sustaining energy for long innings.',
-  },
-  {
-    title: 'Heart Health Unlocked',
-    description: 'Almonds have Good Fats that help keep the heart healthy to keep running between the wickets.',
-  },
-  {
-    title: 'Sustained Energy Unlocked',
-    description: 'Almonds have Magnesium and B vitamins that help in sustaining energy for long innings.',
+    points: 10,
+    title: 'Immunity Unlocked',
+    description: 'Almonds have Zinc, Protein and Vitamin B9 that help boost your immunity.',
   },
 ]
 
+const matchRewardEventAliases = {
+  wicket: 'catch',
+  out: 'catch',
+  two_runs: 'two_or_three_runs',
+  three_runs: 'two_or_three_runs',
+}
+
+const shuffleArray = (items) => {
+  const copy = [...items]
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[copy[i], copy[j]] = [copy[j], copy[i]]
+  }
+  return copy
+}
+
 const getRewardCycleState = () => {
   if (typeof window === 'undefined' || !window.localStorage) {
-    return { matchRewardIndex: -1, idleRewardIndex: -1 }
+    return { matchRewardIndexes: {}, matchRewardQueues: {}, idleRewardIndex: -1 }
   }
 
   try {
@@ -204,36 +287,33 @@ const getRewardCycleState = () => {
     const parsed = JSON.parse(raw || '{}')
 
     return {
-      matchRewardIndex: Number.isInteger(parsed?.matchRewardIndex)
-        ? parsed.matchRewardIndex
-        : -1,
+      matchRewardIndexes:
+        parsed?.matchRewardIndexes && typeof parsed.matchRewardIndexes === 'object'
+          ? parsed.matchRewardIndexes
+          : {},
+      matchRewardQueues:
+        parsed?.matchRewardQueues && typeof parsed.matchRewardQueues === 'object'
+          ? parsed.matchRewardQueues
+          : {},
       idleRewardIndex: Number.isInteger(parsed?.idleRewardIndex)
         ? parsed.idleRewardIndex
         : -1,
     }
   } catch (error) {
-    return { matchRewardIndex: -1, idleRewardIndex: -1 }
+    return { matchRewardIndexes: {}, matchRewardQueues: {}, idleRewardIndex: -1 }
   }
 }
 
-const saveRewardCycleState = (matchRewardIndex, idleRewardIndex) => {
+const saveRewardCycleState = (matchRewardIndexes, matchRewardQueues, idleRewardIndex) => {
   if (typeof window === 'undefined' || !window.localStorage) {
     return
   }
 
   window.localStorage.setItem(
     rewardCycleStateStorageKey,
-    JSON.stringify({ matchRewardIndex, idleRewardIndex }),
+    JSON.stringify({ matchRewardIndexes, matchRewardQueues, idleRewardIndex }),
   )
 }
-
-const matchRewardTitleKeys = new Set(
-  matchRewardMessages.map((message) => normalizeBenefitKey(message.title)),
-)
-
-const idleRewardMessages = benefitMessages.filter(
-  (message) => !matchRewardTitleKeys.has(normalizeBenefitKey(message.title)),
-)
 
 const initLookAroundToggle = () => {
   const lookText = document.querySelector('.look-text')
@@ -278,37 +358,76 @@ const initRewardPopupContent = () => {
   const popupDesc = document.getElementById('rewardDesc')
   const rewardCycleState = getRewardCycleState()
 
-  let matchRewardIndex = rewardCycleState.matchRewardIndex
+  let matchRewardIndexes = rewardCycleState.matchRewardIndexes || {}
+  let matchRewardQueues = rewardCycleState.matchRewardQueues || {}
   let idleRewardIndex = rewardCycleState.idleRewardIndex
 
-  const getNextMessage = (points) => {
+  const resolveMatchRewardEventKey = (eventKey) => {
+    const normalizedKey = String(eventKey || '').trim().toLowerCase()
+    return matchRewardEventAliases[normalizedKey] || normalizedKey
+  }
+
+  const getNextMessage = (points, rewardEventKey) => {
     const isMatchReward = Number(points) >= 50
-    const rewardMessages = isMatchReward ? matchRewardMessages : idleRewardMessages
+    const normalizedEventKey = resolveMatchRewardEventKey(rewardEventKey)
+    const rewardMessages = isMatchReward
+      ? matchRewardMessagesByEvent[normalizedEventKey] || []
+      : idleRewardMessages
 
     if (!Array.isArray(rewardMessages) || rewardMessages.length === 0) {
       return null
     }
 
     if (isMatchReward) {
-      matchRewardIndex = (matchRewardIndex + 1) % rewardMessages.length
-      saveRewardCycleState(matchRewardIndex, idleRewardIndex)
-      return rewardMessages[matchRewardIndex]
+      let queue = Array.isArray(matchRewardQueues[normalizedEventKey])
+        ? matchRewardQueues[normalizedEventKey]
+            .map((value) => Number(value))
+            .filter((value) => Number.isInteger(value) && value >= 0 && value < rewardMessages.length)
+        : []
+
+      if (queue.length === 0) {
+        const allIndexes = rewardMessages.map((_, index) => index)
+        queue = shuffleArray(allIndexes)
+
+        const previousIndex = Number(matchRewardIndexes[normalizedEventKey])
+        if (
+          queue.length > 1 &&
+          Number.isInteger(previousIndex) &&
+          queue[0] === previousIndex
+        ) {
+          ;[queue[0], queue[1]] = [queue[1], queue[0]]
+        }
+      }
+
+      const nextMatchRewardIndex = queue[0]
+      const remainingQueue = queue.slice(1)
+      matchRewardIndexes = {
+        ...matchRewardIndexes,
+        [normalizedEventKey]: nextMatchRewardIndex,
+      }
+      matchRewardQueues = {
+        ...matchRewardQueues,
+        [normalizedEventKey]: remainingQueue,
+      }
+      saveRewardCycleState(matchRewardIndexes, matchRewardQueues, idleRewardIndex)
+      return rewardMessages[nextMatchRewardIndex]
     }
 
     idleRewardIndex = (idleRewardIndex + 1) % rewardMessages.length
-    saveRewardCycleState(matchRewardIndex, idleRewardIndex)
+    saveRewardCycleState(matchRewardIndexes, matchRewardQueues, idleRewardIndex)
     return rewardMessages[idleRewardIndex]
   }
 
-  window.updateRewardPopupContent = (points) => {
+  window.updateRewardPopupContent = (points, rewardEventKey = null) => {
     const safePoints = Number(points) >= 50 ? 50 : 10
-    const nextMessage = getNextMessage(points)
+    const nextMessage = getNextMessage(points, rewardEventKey)
+    const resolvedPoints = Number(nextMessage?.points) > 0 ? Number(nextMessage.points) : safePoints
 
-    weeklyPoints += safePoints
+    weeklyPoints += resolvedPoints
     renderWeeklyPoints()
 
     if (popupPointsText) {
-      popupPointsText.textContent = `${safePoints} POINTS`
+      popupPointsText.textContent = `${resolvedPoints} POINTS`
     }
 
     if (popupTitle && nextMessage?.title) {
@@ -328,6 +447,7 @@ const initRewardPopupContent = () => {
       ? {
           id: nextMessage.title,
           benefit: nextMessage.description || '',
+          pts: resolvedPoints,
         }
       : null
 

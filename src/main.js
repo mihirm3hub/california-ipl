@@ -22,6 +22,29 @@ let weeklyPoints = 0
 let overallPoints = 0
 let unlockedBenefitsCount = 0
 
+const renderUserDataStats = (userData = {}) => {
+  const weeklyScoreEl = document.getElementById('WeeklyScoreText')
+  const benefitCountEl = document.getElementById('BenefitCount')
+  const safeWeeklyPoints = Math.max(0, Number(userData.weeklyPoints) || 0)
+  const safeBenefitCount = Math.min(
+    totalBenefitCount,
+    Math.max(
+      0,
+      Array.isArray(userData.almondBenefitsUnlocked)
+        ? userData.almondBenefitsUnlocked.length
+        : 0,
+    ),
+  )
+
+  if (weeklyScoreEl) {
+    weeklyScoreEl.textContent = String(safeWeeklyPoints)
+  }
+
+  if (benefitCountEl) {
+    benefitCountEl.textContent = `${safeBenefitCount}/${totalBenefitCount}`
+  }
+}
+
 const renderWeeklyPoints = () => {
   const weeklyScoreEl = document.getElementById('WeeklyScoreText')
   if (!weeklyScoreEl) {
@@ -115,6 +138,7 @@ const fetchUserData = async () => {
 
     const payload = await response.json()
     const userData = payload?.data || {}
+    console.log('[userData] fetched:', userData)
 
     weeklyPoints = Number(userData.weeklyPoints) || 0
     overallPoints = Number(userData.overallPoints) || 0
@@ -122,6 +146,7 @@ const fetchUserData = async () => {
       ? userData.almondBenefitsUnlocked.length
       : 0
 
+    renderUserDataStats(userData)
     renderWeeklyPoints()
     renderBenefitCount()
 
@@ -458,24 +483,25 @@ const initRewardPopupContent = () => {
 
 const initMatchEventPopup = () => {
   const overlay = document.getElementById('gameOverlay')
+  const popup = document.getElementById('sixPopup')
   const leadText = document.getElementById('matchEventLead')
   const valueText = document.getElementById('matchEventValue')
 
-  if (!overlay || !leadText || !valueText) {
+  if (!overlay || !popup || !leadText || !valueText) {
     return
   }
 
   let hideTimerId = null
   const popupCopyByEvent = {
-    six: { lead: "IT'S A", value: 'SIX!!' },
-    four: { lead: "IT'S A", value: 'FOUR!!' },
-    wicket: { lead: "IT'S AN", value: 'OUT!!' },
-    catch: { lead: "IT'S AN", value: 'OUT!!' },
-    two_or_three_runs: { lead: "IT'S A", value: '2 OR 3 RUNS!!' },
-    last_over: { lead: "IT'S THE", value: 'LAST OVER!!' },
-    drs: { lead: "IT'S A", value: 'DRS!!' },
-    century: { lead: "IT'S A", value: 'CENTURY!!' },
-    half_century: { lead: "IT'S A", value: 'HALF CENTURY!!' },
+    six: { lead: "IT'S A", value: 'SIX!' },
+    catch: { lead: "NOW THAT'S A", value: 'CATCH!' },
+    wicket: { lead: "NOW THAT'S A", value: 'CATCH!' },
+    four: { lead: "IT'S A", value: 'FOUR!' },
+    two_or_three_runs: { lead: 'QUICK', value: 'RUNNING!' },
+    last_over: { lead: "IT'S THE", value: 'LAST OVER!' },
+    drs: { lead: "IT'S", value: 'DRS TIME!' },
+    century: { lead: "IT'S A", value: 'CENTURY!' },
+    half_century: { lead: "IT'S A", value: 'HALF-CENTURY!' },
   }
 
   window.showMatchEventPopup = (eventKind) => {
@@ -486,6 +512,10 @@ const initMatchEventPopup = () => {
 
     leadText.textContent = copy.lead
     valueText.textContent = copy.value
+    popup.classList.toggle(
+      'long-copy',
+      copy.lead.length > 10 || copy.value.length > 10,
+    )
     overlay.classList.add('active')
 
     if (hideTimerId) {
@@ -494,6 +524,7 @@ const initMatchEventPopup = () => {
 
     hideTimerId = window.setTimeout(() => {
       overlay.classList.remove('active')
+      popup.classList.remove('long-copy')
       hideTimerId = null
     }, 3000)
   }

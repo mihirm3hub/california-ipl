@@ -209,6 +209,20 @@
                     </div>
                 </div>
 
+                <div class="benefit-overlay" id="benefitOverlay" aria-hidden="true">
+                    <div class="benefit-card-popup" role="dialog" aria-modal="true" aria-labelledby="benefitPopupTitle">
+                        <button class="benefit-close" id="benefitClose" type="button" aria-label="Close benefit details">✕</button>
+                        <div class="benefit-top-icon">
+                            <img id="benefitPopupIcon" src="./assets/images/heart-health-icon.png" alt="">
+                        </div>
+                        <h3 class="benefit-title" id="benefitPopupTitle">WEIGHT MANAGEMENT</h3>
+                        <p class="benefit-desc" id="benefitPopupDesc">
+                            Almonds have Protein, Fibre and Good Fats that help in managing weight.
+                        </p>
+                        <button class="benefit-btn view" id="benefitPopupAction" type="button">VIEW MORE BENEFITS</button>
+                    </div>
+                </div>
+
                 <div class="bottom-panel blue-footer-gradient">
                     <footer class="page-footer">
                         <p><a href="#">Privacy Policy</a> | <a href="#">Terms</a></p>
@@ -220,16 +234,45 @@
     </div>
 
     <!--=============== LINK TO EXTERNAL JS ===============-->
-    <script>
+    <script type="module">
+        import { getBenefitDetailByKey, normalizeBenefitKey } from './lib/benefitMessages.js'
+        import { resolveApiBaseUrl } from './lib/cricketApi.js'
+
         const unlockedBenefitsStorageKey = 'almondUnlockedBenefits'
+        const userDataApiEndpoint = `${resolveApiBaseUrl()}/api/user/userData`
 
-        const normalizeBenefitKey = (value) =>
-            String(value || '')
-                .replace(/\s+unlocked$/i, '')
-                .trim()
-                .toUpperCase()
+        const getUnlockedBenefitKeyFromItem = (item) => {
+            if (typeof item === 'string') {
+                return normalizeBenefitKey(item)
+            }
 
-        const applyUnlockedBenefits = () => {
+            if (item && typeof item === 'object') {
+                return normalizeBenefitKey(
+                    item.title ||
+                    item.id ||
+                    item.benefit ||
+                    item.name ||
+                    ''
+                )
+            }
+
+            return ''
+        }
+
+        const applyUnlockedBenefits = (unlockedKeys = []) => {
+            const unlockedSet = new Set(
+                Array.isArray(unlockedKeys)
+                    ? unlockedKeys.map((value) => normalizeBenefitKey(value)).filter(Boolean)
+                    : []
+            )
+
+            document.querySelectorAll('.benefit-card[data-benefit-key]').forEach((card) => {
+                const benefitKey = normalizeBenefitKey(card.dataset.benefitKey)
+                card.classList.toggle('disabled', !unlockedSet.has(benefitKey))
+            })
+        }
+
+        const applyUnlockedBenefitsFromLocalStorage = () => {
             let unlockedBenefitKeys = []
 
             try {
@@ -238,16 +281,104 @@
                 unlockedBenefitKeys = []
             }
 
-            const unlockedSet = new Set(
-                Array.isArray(unlockedBenefitKeys)
-                    ? unlockedBenefitKeys.map((value) => normalizeBenefitKey(value))
-                    : []
-            )
+            applyUnlockedBenefits(unlockedBenefitKeys)
+        }
 
-            document.querySelectorAll('.benefit-card[data-benefit-key]').forEach((card) => {
+        const fetchUserData = async () => {
+            const authToken = sessionStorage.getItem('authToken') || ''
+            if (!authToken) {
+                return null
+            }
+
+            const response = await window.fetch(userDataApiEndpoint, {
+                method: 'GET',
+                headers: {
+                    Accept: '*/*',
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${authToken}`,
+                },
+            })
+
+            if (!response.ok) {
+                throw new Error(`Failed to fetch userData: ${response.status}`)
+            }
+
+            const payload = await response.json()
+            return payload?.data || {}
+        }
+
+        const syncUnlockedBenefitsFromUserData = async () => {
+            try {
+                const userData = await fetchUserData()
+                const unlockedBenefitKeys = Array.isArray(userData?.almondBenefitsUnlocked)
+                    ? userData.almondBenefitsUnlocked
+                        .map((item) => getUnlockedBenefitKeyFromItem(item))
+                        .filter(Boolean)
+                    : []
+
+                if (unlockedBenefitKeys.length) {
+                    localStorage.setItem(
+                        unlockedBenefitsStorageKey,
+                        JSON.stringify(unlockedBenefitKeys)
+                    )
+                    applyUnlockedBenefits(unlockedBenefitKeys)
+                    return
+                }
+            } catch (error) {
+                console.error('Error fetching userData for benefit collection', error)
+            }
+
+            applyUnlockedBenefitsFromLocalStorage()
+        }
+
+        const initBenefitPopup = () => {
+            const overlay = document.getElementById('benefitOverlay')
+            const popupTitle = document.getElementById('benefitPopupTitle')
+            const popupDesc = document.getElementById('benefitPopupDesc')
+            const popupIcon = document.getElementById('benefitPopupIcon')
+            const popupAction = document.getElementById('benefitPopupAction')
+            const popupClose = document.getElementById('benefitClose')
+            const benefitCards = document.querySelectorAll('.benefit-card[data-benefit-key]')
+
+            if (!overlay || !popupTitle || !popupDesc || !popupIcon || !popupAction || !popupClose || !benefitCards.length) {
+                return
+            }
+
+            const closePopup = () => {
+                overlay.classList.remove('active')
+                overlay.setAttribute('aria-hidden', 'true')
+            }
+
+            const openPopup = (card) => {
                 const benefitKey = normalizeBenefitKey(card.dataset.benefitKey)
-                if (unlockedSet.has(benefitKey)) {
-                    card.classList.remove('disabled')
+                const benefitDetail = getBenefitDetailByKey(benefitKey)
+                const cardIcon = card.querySelector('img')
+
+                popupTitle.textContent = benefitDetail?.title || benefitKey
+                popupDesc.textContent = benefitDetail?.description || 'Almonds unlock more goodness with every benefit you collect.'
+                popupIcon.src = cardIcon?.getAttribute('src') || './assets/images/almond-icon.png'
+                popupIcon.alt = benefitDetail?.title || benefitKey
+
+                overlay.classList.add('active')
+                overlay.setAttribute('aria-hidden', 'false')
+            }
+
+            benefitCards.forEach((card) => {
+                card.addEventListener('click', () => openPopup(card))
+            })
+
+            popupClose.addEventListener('click', closePopup)
+            popupAction.addEventListener('click', closePopup)
+
+            overlay.addEventListener('click', (event) => {
+                if (event.target === overlay) {
+                    closePopup()
+                }
+            })
+
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape') {
+                    closePopup()
                 }
             })
         }
@@ -325,7 +456,8 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            applyUnlockedBenefits()
+            syncUnlockedBenefitsFromUserData()
+            initBenefitPopup()
             initBackButton()
             initHamburgerMenu()
         })

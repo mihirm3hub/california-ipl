@@ -84,6 +84,16 @@ const config = {
           noErrorOnMissing: true,
         },
         {
+          from: path.join(srcPath, 'lib', 'benefitMessages.js'),
+          to: path.join(distPath, 'lib', 'benefitMessages.js'),
+          noErrorOnMissing: true,
+        },
+        {
+          from: path.join(srcPath, 'lib', 'cricketApi.js'),
+          to: path.join(distPath, 'lib', 'cricketApi.js'),
+          noErrorOnMissing: true,
+        },
+        {
           from: path.join(rootPath, 'image-targets'),
           to: path.join(distPath, 'image-targets'),
           noErrorOnMissing: true,

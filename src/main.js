@@ -1,4 +1,9 @@
 import { resolveApiBaseUrl } from './lib/cricketApi'
+import {
+  idleRewardMessages,
+  matchRewardMessagesByEvent,
+  normalizeBenefitKey,
+} from './lib/benefitMessages.js'
 
 const unlockedBenefitsStorageKey = 'almondUnlockedBenefits'
 const rewardCycleStateStorageKey = 'almondRewardCycleState'
@@ -22,6 +27,29 @@ let weeklyPoints = 0
 let overallPoints = 0
 let unlockedBenefitsCount = 0
 
+const renderUserDataStats = (userData = {}) => {
+  const weeklyScoreEl = document.getElementById('WeeklyScoreText')
+  const benefitCountEl = document.getElementById('BenefitCount')
+  const safeWeeklyPoints = Math.max(0, Number(userData.weeklyPoints) || 0)
+  const safeBenefitCount = Math.min(
+    totalBenefitCount,
+    Math.max(
+      0,
+      Array.isArray(userData.almondBenefitsUnlocked)
+        ? userData.almondBenefitsUnlocked.length
+        : 0,
+    ),
+  )
+
+  if (weeklyScoreEl) {
+    weeklyScoreEl.textContent = String(safeWeeklyPoints)
+  }
+
+  if (benefitCountEl) {
+    benefitCountEl.textContent = `${safeBenefitCount}/${totalBenefitCount}`
+  }
+}
+
 const renderWeeklyPoints = () => {
   const weeklyScoreEl = document.getElementById('WeeklyScoreText')
   if (!weeklyScoreEl) {
@@ -30,12 +58,6 @@ const renderWeeklyPoints = () => {
 
   weeklyScoreEl.textContent = String(Math.max(0, Number(weeklyPoints) || 0))
 }
-
-const normalizeBenefitKey = (value) =>
-  String(value || '')
-    .replace(/\s+unlocked$/i, '')
-    .trim()
-    .toUpperCase()
 
 const getUnlockedBenefitKeys = () => {
   if (typeof window === 'undefined' || !window.localStorage) {
@@ -115,6 +137,7 @@ const fetchUserData = async () => {
 
     const payload = await response.json()
     const userData = payload?.data || {}
+    console.log('[userData] fetched:', userData)
 
     weeklyPoints = Number(userData.weeklyPoints) || 0
     overallPoints = Number(userData.overallPoints) || 0
@@ -122,6 +145,7 @@ const fetchUserData = async () => {
       ? userData.almondBenefitsUnlocked.length
       : 0
 
+    renderUserDataStats(userData)
     renderWeeklyPoints()
     renderBenefitCount()
 
@@ -133,133 +157,6 @@ const fetchUserData = async () => {
     return null
   }
 }
-
-const matchRewardMessagesByEvent = {
-  six: [
-    {
-      points: 50,
-      title: 'Bone Strength Unlocked',
-      description: 'Almonds have Calcium that helps keep your bones strong for epic shots.',
-    },
-    {
-      points: 50,
-      title: 'Muscle Strength Unlocked',
-      description: 'Almonds have Protein that helps build and preserve muscles for epic shots.',
-    },
-  ],
-  four: [
-    {
-      points: 50,
-      title: 'Bone Strength Unlocked',
-      description: 'Almonds have Calcium that helps keep your bones strong for epic shots.',
-    },
-    {
-      points: 50,
-      title: 'Muscle Strength Unlocked',
-      description: 'Almonds have Protein that helps build and preserve muscles for epic shots.',
-    },
-  ],
-  catch: [
-    {
-      points: 50,
-      title: 'Muscle Strength Unlocked',
-      description: 'Almonds have Protein that helps build and preserve muscles for epic catches.',
-    },
-    {
-      points: 50,
-      title: 'Sustained Energy Unlocked',
-      description: 'Almonds have Magnesium and B vitamins that help in sustaining energy for long innings.',
-    },
-  ],
-  two_or_three_runs: [
-    {
-      points: 50,
-      title: 'Heart Health Unlocked',
-      description:
-        'Almonds have Good Fats that help keep the heart healthy to keep running between the wickets.',
-    },
-  ],
-  last_over: [
-    {
-      points: 50,
-      title: 'Calm Nerves Unlocked',
-      description:
-        'Almonds have Magnesium that helps the body manage stressful moments like the last over.',
-    },
-    {
-      points: 50,
-      title: 'Sustained Energy Unlocked',
-      description: 'Almonds have Magnesium and B vitamins that help in sustaining energy for long innings.',
-    },
-  ],
-  drs: [
-    {
-      points: 50,
-      title: 'Calm Nerves Unlocked',
-      description:
-        'Almonds have Magnesium that helps the body manage stressful moments like waiting for a DRS result.',
-    },
-  ],
-  century: [
-    {
-      points: 50,
-      title: 'Heart Health Unlocked',
-      description:
-        'Almonds have Good Fats that help keep the heart healthy to keep running between the wickets.',
-    },
-    {
-      points: 50,
-      title: 'Sustained Energy Unlocked',
-      description: 'Almonds have Magnesium and B vitamins that help in sustaining energy for long innings.',
-    },
-  ],
-  half_century: [
-    {
-      points: 50,
-      title: 'Heart Health Unlocked',
-      description:
-        'Almonds have Good Fats that help keep the heart healthy to keep running between the wickets.',
-    },
-    {
-      points: 50,
-      title: 'Sustained Energy Unlocked',
-      description: 'Almonds have Magnesium and B vitamins that help in sustaining energy for long innings.',
-    },
-  ],
-}
-
-const idleRewardMessages = [
-  {
-    points: 10,
-    title: 'Weight Management Unlocked',
-    description: 'Almonds have Protein, Fibre and Good Fats that help in managing weight.',
-  },
-  {
-    points: 10,
-    title: 'Glowing Skin Unlocked',
-    description: 'Almonds have Vitamin E that helps your skin glow.',
-  },
-  {
-    points: 10,
-    title: 'Gut Health Unlocked',
-    description: 'Almonds have Fibre that helps keep your gut healthy.',
-  },
-  {
-    points: 10,
-    title: 'Blood Sugar Control Unlocked',
-    description: 'Almonds have Protein, Fiber and Good fats that help keep your sugar in check.',
-  },
-  {
-    points: 10,
-    title: 'Hair Health Unlocked',
-    description: 'Almonds have Vitamin E that helps keep your hair healthy.',
-  },
-  {
-    points: 10,
-    title: 'Immunity Unlocked',
-    description: 'Almonds have Zinc, Protein and Vitamin B9 that help boost your immunity.',
-  },
-]
 
 const matchRewardEventAliases = {
   wicket: 'catch',
@@ -458,24 +355,25 @@ const initRewardPopupContent = () => {
 
 const initMatchEventPopup = () => {
   const overlay = document.getElementById('gameOverlay')
+  const popup = document.getElementById('sixPopup')
   const leadText = document.getElementById('matchEventLead')
   const valueText = document.getElementById('matchEventValue')
 
-  if (!overlay || !leadText || !valueText) {
+  if (!overlay || !popup || !leadText || !valueText) {
     return
   }
 
   let hideTimerId = null
   const popupCopyByEvent = {
-    six: { lead: "IT'S A", value: 'SIX!!' },
-    four: { lead: "IT'S A", value: 'FOUR!!' },
-    wicket: { lead: "IT'S AN", value: 'OUT!!' },
-    catch: { lead: "IT'S AN", value: 'OUT!!' },
-    two_or_three_runs: { lead: "IT'S A", value: '2 OR 3 RUNS!!' },
-    last_over: { lead: "IT'S THE", value: 'LAST OVER!!' },
-    drs: { lead: "IT'S A", value: 'DRS!!' },
-    century: { lead: "IT'S A", value: 'CENTURY!!' },
-    half_century: { lead: "IT'S A", value: 'HALF CENTURY!!' },
+    six: { lead: "IT'S A", value: 'SIX!' },
+    catch: { lead: "NOW THAT'S A", value: 'CATCH!' },
+    wicket: { lead: "NOW THAT'S A", value: 'CATCH!' },
+    four: { lead: "IT'S A", value: 'FOUR!' },
+    two_or_three_runs: { lead: 'QUICK', value: 'RUNNING!' },
+    last_over: { lead: "IT'S THE", value: 'LAST OVER!' },
+    drs: { lead: "IT'S", value: 'DRS TIME!' },
+    century: { lead: "IT'S A", value: 'CENTURY!' },
+    half_century: { lead: "IT'S A", value: 'HALF-CENTURY!' },
   }
 
   window.showMatchEventPopup = (eventKind) => {
@@ -486,6 +384,10 @@ const initMatchEventPopup = () => {
 
     leadText.textContent = copy.lead
     valueText.textContent = copy.value
+    popup.classList.toggle(
+      'long-copy',
+      copy.lead.length > 10 || copy.value.length > 10,
+    )
     overlay.classList.add('active')
 
     if (hideTimerId) {
@@ -494,6 +396,7 @@ const initMatchEventPopup = () => {
 
     hideTimerId = window.setTimeout(() => {
       overlay.classList.remove('active')
+      popup.classList.remove('long-copy')
       hideTimerId = null
     }, 3000)
   }

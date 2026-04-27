@@ -599,12 +599,25 @@ body.menu-open {
 }
 
 #promptText {
+  position: fixed;
+  left: 50%;
+  bottom: max(18px, env(safe-area-inset-bottom, 0px) + 18px);
+  transform: translateX(-50%);
+  width: min(calc(100vw - 24px), 560px);
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(8, 28, 55, 0.92) 0%, rgba(10, 50, 96, 0.88) 100%);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.28);
   margin: 0;
+  text-align: center;
   font-family: var(--font-display);
   font-size: clamp(16px, 4.8vw, 24px);
   line-height: 1.1;
   color: var(--color-white);
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+  z-index: 10001;
+  pointer-events: none;
 }
 
 /* ===== LIVE STATUS ===== */

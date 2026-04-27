@@ -26,6 +26,20 @@ const userDataApiEndpoint = `${resolveApiBaseUrl()}/api/user/userData`
 let weeklyPoints = 0
 let overallPoints = 0
 let unlockedBenefitsCount = 0
+let pendingMatchEventPopupKind = null
+
+const queueMatchEventPopup = (eventKind) => {
+  const normalizedEventKind = String(eventKind || '').trim().toLowerCase()
+  if (!normalizedEventKind) {
+    return
+  }
+
+  pendingMatchEventPopupKind = normalizedEventKind
+}
+
+if (typeof window !== 'undefined') {
+  window.showMatchEventPopup = queueMatchEventPopup
+}
 
 const renderUserDataStats = (userData = {}) => {
   const weeklyScoreEl = document.getElementById('WeeklyScoreText')
@@ -402,6 +416,7 @@ const initMatchEventPopup = () => {
   }
 
   let hideTimerId = null
+  const loaderScreen = document.getElementById('loaderScreen')
   const popupCopyByEvent = {
     six: { lead: "IT'S A", value: 'SIX!' },
     catch: { lead: "NOW THAT'S A", value: 'CATCH!' },
@@ -414,8 +429,13 @@ const initMatchEventPopup = () => {
     half_century: { lead: "IT'S A", value: 'HALF-CENTURY!' },
   }
 
-  window.showMatchEventPopup = (eventKind) => {
-    const copy = popupCopyByEvent[eventKind]
+  const loaderIsVisible = () =>
+    Boolean(loaderScreen) &&
+    window.getComputedStyle(loaderScreen).display !== 'none'
+
+  const showPopupNow = (eventKind) => {
+    const normalizedEventKind = String(eventKind || '').trim().toLowerCase()
+    const copy = popupCopyByEvent[normalizedEventKind]
     if (!copy) {
       return
     }
@@ -437,6 +457,27 @@ const initMatchEventPopup = () => {
       popup.classList.remove('long-copy')
       hideTimerId = null
     }, 3000)
+  }
+
+  const flushQueuedPopup = () => {
+    if (!pendingMatchEventPopupKind || loaderIsVisible()) {
+      return
+    }
+
+    const eventKind = pendingMatchEventPopupKind
+    pendingMatchEventPopupKind = null
+    showPopupNow(eventKind)
+  }
+
+  window.showMatchEventPopup = (eventKind) => {
+    queueMatchEventPopup(eventKind)
+    flushQueuedPopup()
+  }
+
+  if (loaderIsVisible()) {
+    window.addEventListener('loaderScreenHidden', flushQueuedPopup, { once: true })
+  } else {
+    flushQueuedPopup()
   }
 }
 

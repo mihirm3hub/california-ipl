@@ -57,11 +57,13 @@ export const entitySpawnerComponent = {
 
     this.spawnIntervalId = null
 
-    // Spawn one idle almond immediately when the experience starts.
-    this.spawnIdleAlmond()
-
     // (1) Almond appears every 30s and disappears in 10s (10 points).
     this.idleSpawnIntervalId = window.setInterval(() => {
+      if (!this.canSpawnAlmonds()) {
+        console.log('[almond] idle spawn skipped: live match is not connected')
+        return
+      }
+
       this.idleSpawnCount += 1
       console.log('[almond] 30s idle spawn tick:', {
         count: this.idleSpawnCount,
@@ -87,6 +89,11 @@ export const entitySpawnerComponent = {
       const normalized = String(value || '').trim().toLowerCase()
       if (normalized !== 'idle' && normalized !== 'match') {
         console.warn("[almond] use 'idle' or 'match'")
+        return
+      }
+
+      if (!this.canSpawnAlmonds()) {
+        console.warn('[almond] spawn blocked: live match is not connected')
         return
       }
 
@@ -133,8 +140,38 @@ export const entitySpawnerComponent = {
     this.scoreEl.textContent = `Score: ${this.score}`
     console.log('[score] scoreEl.textContent:', this.scoreEl.textContent)
   },
+  canSpawnAlmonds() {
+    return Boolean(this.isLiveMatchConnected && this.el?.sceneEl)
+  },
+  clearSpawnedAlmonds() {
+    if (!this.el?.sceneEl) return
+
+    const spawnedAlmonds = this.el.sceneEl.querySelectorAll('[data-spawn-type]')
+    spawnedAlmonds.forEach((almondEl) => {
+      if (almondEl.__despawnTimer) {
+        window.clearTimeout(almondEl.__despawnTimer)
+        almondEl.__despawnTimer = null
+      }
+
+      const parentEl = almondEl.parentNode
+      if (parentEl?.parentNode) {
+        parentEl.parentNode.removeChild(parentEl)
+        return
+      }
+
+      if (almondEl.parentNode) {
+        almondEl.parentNode.removeChild(almondEl)
+      }
+    })
+  },
   setLiveMatchConnected(isConnected) {
-    this.isLiveMatchConnected = Boolean(isConnected)
+    const nextConnectedState = Boolean(isConnected)
+    const didDisconnect = this.isLiveMatchConnected && !nextConnectedState
+
+    this.isLiveMatchConnected = nextConnectedState
+    if (didDisconnect) {
+      this.clearSpawnedAlmonds()
+    }
     this.renderLiveMatchStatus()
   },
   renderLiveMatchStatus() {
@@ -201,13 +238,13 @@ export const entitySpawnerComponent = {
     )
   },
   spawnIdleAlmond() {
-    if (!this.el?.sceneEl) return
+    if (!this.canSpawnAlmonds()) return
     const meta = { type: 'idle', points: 10, despawnMs: 10000 }
     const almondEl = this.spawnAlmondAroundUser(meta.type)
     this.tagSpawnedAlmond(almondEl, meta)
   },
   spawnMatchEventAlmond(eventKey = '') {
-    if (!this.el?.sceneEl) return
+    if (!this.canSpawnAlmonds()) return
     const meta = { type: 'match', points: 50, despawnMs: 30000, eventKey }
     const almondEl = this.spawnAlmondAroundUser(meta.type)
     this.tagSpawnedAlmond(almondEl, meta)

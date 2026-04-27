@@ -190,11 +190,11 @@
                                 <p>Bone<br> Strength</p>
                             </div>
 
-                            <div class="benefit-card disabled" data-benefit-key="SUSTAINED ENERGY">
+                            <div class="benefit-card disabled" data-benefit-key="SATIETY AND APPETITE CONTROL">
                                 <div class="icon-box">
-                                    <img src="./assets/images/sustained-energy-icon.png" alt="Sustained Energy">
+                                    <img src="./assets/images/sustained-energy-icon.png" alt="Satiety and Appetite Control">
                                 </div>
-                                <p>Sustained Energy</p>
+                                <p>Satiety and Appetite Control</p>
                             </div>
 
                             <div class="benefit-card disabled" data-benefit-key="SUSTAINED ENERGY">
@@ -235,11 +235,89 @@
 
     <!--=============== LINK TO EXTERNAL JS ===============-->
     <script type="module">
-        import { getBenefitDetailByKey, normalizeBenefitKey } from './lib/benefitMessages.js'
         import { resolveApiBaseUrl } from './lib/cricketApi.js'
 
         const unlockedBenefitsStorageKey = 'almondUnlockedBenefits'
         const userDataApiEndpoint = `${resolveApiBaseUrl()}/api/user/userData`
+        const benefitKeyAliases = {
+            'BONE HEALTH': 'BONE STRENGTH',
+            'MANAGE STRESS': 'CALM NERVES',
+        }
+        const benefitDetails = [
+            {
+                key: 'WEIGHT MANAGEMENT',
+                title: 'Weight Management',
+                description: 'Almonds are rich in Good Fats, Fibre and Protein that help manage weight.',
+            },
+            {
+                key: 'GLOWING SKIN',
+                title: 'Glowing Skin',
+                description: 'Almonds are rich in Vitamin E which helps nourish skin from within.',
+            },
+            {
+                key: 'GUT HEALTH',
+                title: 'Gut Health',
+                description: 'Almonds are rich in Fibre and act as a natural prebiotic that helps support gut health.',
+            },
+            {
+                key: 'IMMUNITY',
+                title: 'Immunity',
+                description: 'Almonds provide Zinc, Vitamin E, Magnesium, Iron, Copper, and Vitamin B9 that help support immune function.',
+            },
+            {
+                key: 'CALM NERVES',
+                title: 'Manage Stress',
+                description: 'Almonds are a rich source of Magnesium that helps the body manage stress and supports better sleep.',
+            },
+            {
+                key: 'BLOOD SUGAR CONTROL',
+                title: 'Blood Sugar Control',
+                description: 'Almonds contain Protein, Fibre and Good Fats that help regulate blood sugar.',
+            },
+            {
+                key: 'HEART HEALTH',
+                title: 'Heart Health',
+                description: 'Almonds contain Good Fats that help keep the heart healthy.',
+            },
+            {
+                key: 'HAIR HEALTH',
+                title: 'Hair Health',
+                description: 'Almonds are rich in Vitamin E and contain Biotin that help keep hair healthy.',
+            },
+            {
+                key: 'MUSCLE STRENGTH',
+                title: 'Muscle Strength',
+                description: 'Almonds have Protein, Vitamin E, and Good Fats that support muscle strength and recovery.',
+            },
+            {
+                key: 'BONE STRENGTH',
+                title: 'Bone Health',
+                description: 'Almonds have Calcium, Magnesium and Phosphorus that contribute to keeping bones strong.',
+            },
+            {
+                key: 'SUSTAINED ENERGY',
+                title: 'Sustained Energy',
+                description: 'The nutrient-dense structure of almonds slows digestion and supports longer-lasting energy.',
+            },
+            {
+                key: 'SATIETY AND APPETITE CONTROL',
+                title: 'Satiety and Appetite Control',
+                description: 'Fibre and Protein in almonds contribute to a feeling of fullness and reduce hunger pangs.',
+            },
+        ]
+        const benefitDetailsByKey = benefitDetails.reduce((acc, benefit) => {
+            acc[benefit.key] = benefit
+            return acc
+        }, {})
+
+        const normalizeBenefitKey = (value) => {
+            const normalizedKey = String(value || '')
+                .replace(/\s+(unlocked|collected)$/i, '')
+                .trim()
+                .toUpperCase()
+
+            return benefitKeyAliases[normalizedKey] || normalizedKey
+        }
 
         const getUnlockedBenefitKeyFromItem = (item) => {
             if (typeof item === 'string') {
@@ -351,7 +429,7 @@
 
             const openPopup = (card) => {
                 const benefitKey = normalizeBenefitKey(card.dataset.benefitKey)
-                const benefitDetail = getBenefitDetailByKey(benefitKey)
+                const benefitDetail = benefitDetailsByKey[benefitKey]
                 const cardIcon = card.querySelector('img')
 
                 popupTitle.textContent = benefitDetail?.title || benefitKey

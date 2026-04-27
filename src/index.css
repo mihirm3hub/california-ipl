@@ -420,6 +420,7 @@ body.menu-open {
   left: 0;
   right: 0;
   bottom: 126px;
+  transition: opacity 0.35s ease;
 }
 
 .look-icons {
@@ -539,22 +540,62 @@ body.menu-open {
 .look-text {
   text-align: center;
   flex: 1;
+  position: relative;
+  min-height: 58px;
+  overflow: hidden;
 }
 
+.look-message-default,
 .look-around-hint {
-  display: none;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: translateY(12px) scale(0.98);
+  pointer-events: none;
+  visibility: hidden;
+  animation-duration: 5.6s;
+  animation-timing-function: ease;
+  animation-fill-mode: forwards;
 }
 
-.look-text.show-lookaround .look-message-default {
-  display: none;
+.look-text.show-default-instruction .look-message-default {
+  visibility: visible;
+  animation-name: lookInstructionCycle;
 }
 
-.look-text.show-lookaround .look-around-hint {
-  display: block;
+.look-text.show-lookaround-instruction .look-around-hint {
+  visibility: visible;
+  animation-name: lookInstructionCycle;
 }
 
-.look-text:not(.show-lookaround) .look-around-hint {
-  display: none;
+.look-section.hide-instructions {
+  opacity: 0;
+  pointer-events: none;
+}
+
+@keyframes lookInstructionCycle {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+
+  10% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  82% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.98);
+  }
 }
 
 #promptText {

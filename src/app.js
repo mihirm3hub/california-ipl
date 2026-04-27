@@ -24,6 +24,16 @@ import { playVideoComponent } from './play-video'
 AFRAME.registerComponent('play-video', playVideoComponent)
 
 let hasStartedLoaderSequence = false
+let hasDispatchedLoaderHidden = false
+
+const notifyLoaderHidden = () => {
+    if (hasDispatchedLoaderHidden) {
+        return
+    }
+
+    hasDispatchedLoaderHidden = true
+    window.dispatchEvent(new window.CustomEvent('loaderScreenHidden'))
+}
 
 const hideLoadingScreen = () => {
     if (hasStartedLoaderSequence) {
@@ -77,6 +87,7 @@ const hideLoadingScreen = () => {
 
         setTimeout(() => {
             loader.style.display = "none";
+            notifyLoaderHidden()
         }, 700);
     }, 4200);
 }

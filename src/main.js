@@ -213,40 +213,78 @@ const saveRewardCycleState = (matchRewardIndexes, matchRewardQueues, idleRewardI
 }
 
 const initLookAroundToggle = () => {
+  const lookSection = document.querySelector('.look-section')
   const lookText = document.querySelector('.look-text')
-  const arrowZones = document.querySelectorAll('.arrow-zone')
   const pointingIcon = document.querySelector('.pointing-icon')
 
-  if (!lookText || arrowZones.length === 0) return
+  if (!lookSection || !lookText) return
 
-  const setLookAroundState = (showLookAround) => {
-    lookText.classList.toggle('show-lookaround', showLookAround)
+  const instructionSequence = [
+    {
+      stateClass: 'show-default-instruction',
+      iconSrc: './assets/images/pointing.png',
+    },
+    {
+      stateClass: 'show-lookaround-instruction',
+      iconSrc: './assets/images/camera.png',
+    },
+  ]
+  const displayDurationMs = 5000
+  const transitionBufferMs = 600
+  let currentTimeoutId = null
+
+  const setInstructionState = ({stateClass, iconSrc}) => {
+    lookText.classList.remove(
+      'show-default-instruction',
+      'show-lookaround-instruction',
+      'hide-instructions'
+    )
+    lookText.classList.add(stateClass)
     if (pointingIcon) {
-      pointingIcon.src = showLookAround
-        ? './assets/images/camera.png'
-        : './assets/images/pointing.png'
+      pointingIcon.src = iconSrc
     }
   }
 
-  const toggleHint = () => {
-    const isShowingLookAround = lookText.classList.contains('show-lookaround')
-    setLookAroundState(!isShowingLookAround)
+  const hideInstructions = () => {
+    lookText.classList.remove('show-default-instruction', 'show-lookaround-instruction')
+    lookSection.classList.add('hide-instructions')
+    window.setTimeout(() => {
+      lookSection.hidden = true
+    }, 350)
   }
 
-  const onKeydown = (event) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault()
-      toggleHint()
+  const showInstructionAtIndex = (index) => {
+    const instruction = instructionSequence[index]
+
+    if (!instruction) {
+      hideInstructions()
+      return
     }
+
+    setInstructionState(instruction)
+    currentTimeoutId = window.setTimeout(() => {
+      showInstructionAtIndex(index + 1)
+    }, displayDurationMs + transitionBufferMs)
   }
 
-  arrowZones.forEach((zone) => {
-    zone.addEventListener('click', toggleHint)
-    zone.addEventListener('keydown', onKeydown)
+  window.addEventListener('beforeunload', () => {
+    if (currentTimeoutId !== null) {
+      window.clearTimeout(currentTimeoutId)
+    }
   })
 
-  // Start with the default single-line instruction visible.
-  setLookAroundState(false)
+  const startInstructionSequence = () => {
+    lookSection.hidden = false
+    lookSection.classList.remove('hide-instructions')
+    showInstructionAtIndex(0)
+  }
+
+  if (window.getComputedStyle(document.getElementById('loaderScreen') || document.body).display === 'none') {
+    startInstructionSequence()
+    return
+  }
+
+  window.addEventListener('loaderScreenHidden', startInstructionSequence, {once: true})
 }
 
 const initRewardPopupContent = () => {

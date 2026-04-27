@@ -212,7 +212,7 @@ export const entitySpawnerComponent = {
     const almondEl = this.spawnAlmondAroundUser(meta.type)
     this.tagSpawnedAlmond(almondEl, meta)
   },
-  async startBallByBallStreaming(pollMs = 5000) {
+  async startBallByBallStreaming(pollMs = 10000) {
     this.stopBallByBallStreaming()
     this.bbError = ''
     this.bbNotStarted = false

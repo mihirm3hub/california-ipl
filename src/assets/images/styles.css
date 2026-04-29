@@ -1895,6 +1895,17 @@ ul {
     width: 18px;
 }
 
+#lookTextBlock p {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+}
+
+#lookTextBlock p.is-fading {
+    opacity: 0;
+    transform: translateY(-10px);
+}
+
 /* ARROWS */
 .arrow-zone .arrow {
     position: relative;
@@ -1909,8 +1920,6 @@ ul {
     opacity: 1;
     filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4));
 }
-
-/* ===== ANIMATION ===== */
 
 /* LEFT */
 .arrow.left {

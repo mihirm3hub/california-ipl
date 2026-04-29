@@ -256,69 +256,53 @@ const saveRewardCycleState = (matchRewardIndexes, matchRewardQueues, idleRewardI
 
 const initLookAroundToggle = () => {
   const lookSection = document.querySelector('.look-section')
-  const lookText = document.querySelector('.look-text')
-  const pointingIcon = document.querySelector('.pointing-icon')
+  const messageElement = document.querySelector('#lookTextBlock p')
 
-  if (!lookSection || !lookText) return
+  if (!lookSection || !messageElement) return
 
   const instructionSequence = [
-    {
-      stateClass: 'show-default-instruction',
-      iconSrc: './assets/images/pointing.png',
-    },
-    {
-      stateClass: 'show-lookaround-instruction',
-      iconSrc: './assets/images/camera.png',
-    },
+    'Every 10 seconds, a new silver almond appears.',
+    'Look around for almonds! The next silver almond may be behind you.',
+    'Last over = last chance to grab golden almonds.',
+    'Golden almonds come at key match moments.',
+    'Look up! A silver almond may be above you.',
   ]
   const displayDurationMs = 5000
-  const transitionBufferMs = 600
-  let currentTimeoutId = null
-
-  const setInstructionState = ({stateClass, iconSrc}) => {
-    lookText.classList.remove(
-      'show-default-instruction',
-      'show-lookaround-instruction',
-      'hide-instructions'
-    )
-    lookText.classList.add(stateClass)
-    if (pointingIcon) {
-      pointingIcon.src = iconSrc
-    }
-  }
-
-  const hideInstructions = () => {
-    lookText.classList.remove('show-default-instruction', 'show-lookaround-instruction')
-    lookSection.classList.add('hide-instructions')
-    window.setTimeout(() => {
-      lookSection.hidden = true
-    }, 350)
-  }
-
-  const showInstructionAtIndex = (index) => {
-    const instruction = instructionSequence[index]
-
-    if (!instruction) {
-      hideInstructions()
-      return
-    }
-
-    setInstructionState(instruction)
-    currentTimeoutId = window.setTimeout(() => {
-      showInstructionAtIndex(index + 1)
-    }, displayDurationMs + transitionBufferMs)
-  }
+  const fadeDurationMs = 700
+  let currentCycleTimeoutId = null
+  let currentFadeTimeoutId = null
 
   window.addEventListener('beforeunload', () => {
-    if (currentTimeoutId !== null) {
-      window.clearTimeout(currentTimeoutId)
+    if (currentCycleTimeoutId !== null) {
+      window.clearTimeout(currentCycleTimeoutId)
+    }
+    if (currentFadeTimeoutId !== null) {
+      window.clearTimeout(currentFadeTimeoutId)
     }
   })
 
   const startInstructionSequence = () => {
     lookSection.hidden = false
-    lookSection.classList.remove('hide-instructions')
-    showInstructionAtIndex(0)
+    let currentInstructionIndex = 0
+
+    messageElement.textContent = instructionSequence[currentInstructionIndex]
+    messageElement.classList.remove('is-fading')
+
+    const queueNextInstruction = () => {
+      currentCycleTimeoutId = window.setTimeout(() => {
+        messageElement.classList.add('is-fading')
+
+        currentFadeTimeoutId = window.setTimeout(() => {
+          currentInstructionIndex =
+            (currentInstructionIndex + 1) % instructionSequence.length
+          messageElement.textContent = instructionSequence[currentInstructionIndex]
+          messageElement.classList.remove('is-fading')
+          queueNextInstruction()
+        }, fadeDurationMs)
+      }, displayDurationMs)
+    }
+
+    queueNextInstruction()
   }
 
   if (window.getComputedStyle(document.getElementById('loaderScreen') || document.body).display === 'none') {

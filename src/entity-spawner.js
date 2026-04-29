@@ -78,7 +78,7 @@ export const entitySpawnerComponent = {
         elapsedSeconds: Math.round((Date.now() - this.idleSpawnStartedAt) / 1000),
       })
       this.spawnIdleAlmond()
-    }, 30000)
+    }, 10000)
 
     console.log('[bb] init: starting featured match streaming')
     this.startBallByBallStreaming()

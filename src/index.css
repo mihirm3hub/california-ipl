@@ -954,6 +954,110 @@ body.menu-open {
   visibility: visible;
 }
 
+.power-play-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.18);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 55;
+}
+
+.power-play-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.power-play-overlay.hidden {
+  display: none;
+}
+
+.power-play-card {
+  width: min(232px, calc(100vw - 32px));
+  min-height: 184px;
+  padding: 20px 18px;
+  border-radius: 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  background: url('https://almondwin.com/game/d303c6cd0d5461ca53be.png') no-repeat center center;
+  background-size: cover;
+  box-shadow:
+    inset 0 4px 10px rgba(255, 255, 255, 0.3),
+    inset 0 -10px 20px rgba(0, 0, 0, 0.25);
+}
+
+.power-play-card p {
+  margin: 0;
+  color: var(--color-white);
+  font-size: clamp(22px, 6vw, 30px);
+  line-height: 0.98;
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+}
+
+.power-play-card h2 {
+  margin: 0;
+  color: #2f2e2e;
+  font-size: clamp(42px, 14vw, 72px);
+  line-height: 0.9;
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+}
+
+.power-play-timer {
+  position: fixed;
+  top: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 176px;
+  padding: 10px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 1px rgba(255, 226, 136, 0.6), inset 0 -8px 20px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  z-index: 56;
+  pointer-events: none;
+}
+
+.power-play-timer.hidden {
+  display: none;
+}
+
+.power-play-timer__label,
+.power-play-timer__value {
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.power-play-timer__label {
+  color: var(--color-white);
+  font-size: 20px;
+}
+
+.power-play-timer__value {
+  color: #ffe288;
+  font-size: 24px;
+}
+
 /* ===== POPUP ===== */
 .six-popup {
   width: min(220px, calc(100vw - 28px));
@@ -1024,7 +1128,6 @@ body.menu-open {
 .six-popup.long-copy h2 {
   font-size: clamp(28px, 9vw, 46px);
 }
-
 
 @media (max-width: 420px) {
   .screen-container {

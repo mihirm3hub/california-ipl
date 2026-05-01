@@ -16,6 +16,12 @@ import {
   stripBallCommentHtml,
 } from './lib/ballEvents'
 
+const POWER_PLAY_STORAGE_KEY = 'almondPowerPlayState'
+const POWER_PLAY_INITIAL_DELAY_MS = 10000
+const POWER_PLAY_COUNTDOWN_MS = 5000
+const POWER_PLAY_DURATION_MS = 60000
+const POWER_PLAY_SECOND_WAVE_AT_MS = 30000
+
 export const entitySpawnerComponent = {
   schema: {
     min: { default: 10 },
@@ -26,6 +32,11 @@ export const entitySpawnerComponent = {
     this.scoreEl = document.getElementById('scoreText')
     this.liveStatusEl = document.querySelector('.live-status')
     this.liveStatusTextEl = this.liveStatusEl?.querySelector('p') || null
+    this.powerPlayOverlayEl = document.getElementById('powerPlayOverlay')
+    this.powerPlayLabelEl = document.getElementById('powerPlayLabel')
+    this.powerPlayValueEl = document.getElementById('powerPlayValue')
+    this.powerPlayTimerEl = document.getElementById('powerPlayTimer')
+    this.powerPlayTimerValueEl = document.getElementById('powerPlayTimerValue')
     this.camera = document.getElementById('camera')
     this.popup = document.getElementById('almondPopup')
     this.popupOkBtn = document.getElementById('popupOkBtn')
@@ -47,8 +58,23 @@ export const entitySpawnerComponent = {
     this.nextSpawnMeta = null
     this.idleSpawnCount = 0
     this.idleSpawnStartedAt = Date.now()
+    this.hasScheduledPowerPlay = false
+    this.hasCompletedPowerPlay = false
+    this.isPowerPlayActive = false
+    this.isPowerPlayCountdownActive = false
+    this.powerPlayStartTimeoutId = null
+    this.powerPlayCountdownIntervalId = null
+    this.powerPlayTimerIntervalId = null
+    this.powerPlayEndTimeoutId = null
+    this.powerPlaySecondWaveTimeoutId = null
+    this.powerPlayScheduledAt = 0
+    this.powerPlayCountdownEndsAt = 0
+    this.powerPlayEndsAt = 0
+    this.powerPlayCurrentWave = 0
+    this.powerPlayStartedAt = 0
 
     this.hidePopup = this.hidePopup.bind(this)
+    this.handlePageHide = this.handlePageHide.bind(this)
 
     if (this.popupOkBtn) {
       this.popupOkBtn.addEventListener('click', this.hidePopup)
@@ -62,6 +88,7 @@ export const entitySpawnerComponent = {
     }
     this.renderScore()
     this.renderLiveMatchStatus()
+    window.addEventListener('pagehide', this.handlePageHide)
 
     this.spawnIntervalId = null
 
@@ -149,7 +176,388 @@ export const entitySpawnerComponent = {
     console.log('[score] scoreEl.textContent:', this.scoreEl.textContent)
   },
   canSpawnAlmonds() {
-    return Boolean(this.isLiveMatchConnected && this.el?.sceneEl)
+    return Boolean(
+      this.isLiveMatchConnected &&
+      this.el?.sceneEl &&
+      !this.isSpawningPausedForPowerPlay()
+    )
+  },
+  handlePageHide() {
+    this.persistPowerPlayState()
+    this.teardownPowerPlayRuntime()
+  },
+  readPowerPlayState() {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return null
+    }
+
+    try {
+      const raw = window.localStorage.getItem(POWER_PLAY_STORAGE_KEY)
+      if (!raw) {
+        return null
+      }
+
+      const parsed = JSON.parse(raw)
+      if (!parsed || typeof parsed !== 'object') {
+        return null
+      }
+
+      if (parsed.matchKey && this.bbMatchKey && parsed.matchKey !== this.bbMatchKey) {
+        window.localStorage.removeItem(POWER_PLAY_STORAGE_KEY)
+        return null
+      }
+
+      return parsed
+    } catch (error) {
+      return null
+    }
+  },
+  writePowerPlayState(state) {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return
+    }
+
+    window.localStorage.setItem(POWER_PLAY_STORAGE_KEY, JSON.stringify(state))
+  },
+  clearPowerPlayState() {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return
+    }
+
+    window.localStorage.removeItem(POWER_PLAY_STORAGE_KEY)
+  },
+  getPowerPlayPhase() {
+    if (this.hasCompletedPowerPlay) {
+      return 'completed'
+    }
+    if (this.isPowerPlayActive) {
+      return 'active'
+    }
+    if (this.isPowerPlayCountdownActive) {
+      return 'countdown'
+    }
+    if (this.hasScheduledPowerPlay) {
+      return 'scheduled'
+    }
+    return 'idle'
+  },
+  getPowerPlayRemainingMs() {
+    const now = Date.now()
+    if (this.isPowerPlayActive) {
+      return Math.max(0, this.powerPlayEndsAt - now)
+    }
+    if (this.isPowerPlayCountdownActive) {
+      return Math.max(0, this.powerPlayCountdownEndsAt - now)
+    }
+    if (this.hasScheduledPowerPlay) {
+      return Math.max(0, this.powerPlayScheduledAt - now)
+    }
+    return 0
+  },
+  persistPowerPlayState() {
+    const phase = this.getPowerPlayPhase()
+
+    if (!this.bbMatchKey) {
+      return
+    }
+
+    if (phase === 'idle' || phase === 'completed') {
+      this.clearPowerPlayState()
+      return
+    }
+
+    const state = {
+      matchKey: this.bbMatchKey,
+      phase,
+      remainingMs: this.getPowerPlayRemainingMs(),
+      currentWave: this.powerPlayCurrentWave,
+    }
+
+    this.writePowerPlayState(state)
+  },
+  restorePowerPlayState() {
+    const state = this.readPowerPlayState()
+    if (!state) {
+      return false
+    }
+
+    const remainingMs = Math.max(0, Number(state.remainingMs) || 0)
+    const phase = String(state.phase || '').toLowerCase()
+    const currentWave = Math.max(1, Number(state.currentWave) || 1)
+
+    if (phase === 'scheduled' && remainingMs > 0) {
+      this.resumeScheduledPowerPlay(remainingMs)
+      return true
+    }
+
+    if (phase === 'countdown' && remainingMs > 0) {
+      this.startPowerPlayCountdown(remainingMs)
+      return true
+    }
+
+    if (phase === 'active' && remainingMs > 0) {
+      this.activatePowerPlay({remainingMs, currentWave})
+      return true
+    }
+
+    this.clearPowerPlayState()
+    return false
+  },
+  teardownPowerPlayRuntime() {
+    if (this.powerPlayStartTimeoutId) {
+      window.clearTimeout(this.powerPlayStartTimeoutId)
+      this.powerPlayStartTimeoutId = null
+    }
+    if (this.powerPlayCountdownIntervalId) {
+      window.clearInterval(this.powerPlayCountdownIntervalId)
+      this.powerPlayCountdownIntervalId = null
+    }
+    if (this.powerPlayTimerIntervalId) {
+      window.clearInterval(this.powerPlayTimerIntervalId)
+      this.powerPlayTimerIntervalId = null
+    }
+    if (this.powerPlayEndTimeoutId) {
+      window.clearTimeout(this.powerPlayEndTimeoutId)
+      this.powerPlayEndTimeoutId = null
+    }
+    if (this.powerPlaySecondWaveTimeoutId) {
+      window.clearTimeout(this.powerPlaySecondWaveTimeoutId)
+      this.powerPlaySecondWaveTimeoutId = null
+    }
+
+    this.hidePowerPlayCountdown()
+    this.hidePowerPlayTimer()
+    this.clearPowerPlayAlmonds()
+  },
+  resumeScheduledPowerPlay(remainingMs) {
+    this.hasScheduledPowerPlay = true
+    this.powerPlayScheduledAt = Date.now() + remainingMs
+    this.powerPlayStartTimeoutId = window.setTimeout(() => {
+      this.powerPlayStartTimeoutId = null
+      this.startPowerPlayCountdown()
+    }, remainingMs)
+  },
+  schedulePowerPlay() {
+    if (this.hasScheduledPowerPlay || this.hasCompletedPowerPlay) {
+      return
+    }
+
+    if (this.restorePowerPlayState()) {
+      return
+    }
+
+    this.hasScheduledPowerPlay = true
+    this.powerPlayScheduledAt = Date.now() + POWER_PLAY_INITIAL_DELAY_MS
+    this.powerPlayStartTimeoutId = window.setTimeout(() => {
+      this.powerPlayStartTimeoutId = null
+      this.startPowerPlayCountdown()
+    }, POWER_PLAY_INITIAL_DELAY_MS)
+  },
+  startPowerPlayCountdown(remainingMs = POWER_PLAY_COUNTDOWN_MS) {
+    if (this.hasCompletedPowerPlay || this.isPowerPlayCountdownActive || this.isPowerPlayActive) {
+      return
+    }
+
+    this.isPowerPlayCountdownActive = true
+    this.powerPlayScheduledAt = 0
+    this.powerPlayCountdownEndsAt = Date.now() + remainingMs
+
+    const renderCountdownState = () => {
+      const msLeft = Math.max(0, this.powerPlayCountdownEndsAt - Date.now())
+      const secondsLeft = Math.ceil(msLeft / 1000)
+
+      if (secondsLeft > 0) {
+        this.showPowerPlayCountdown('Power Play Starts In', String(secondsLeft))
+        return false
+      }
+
+      this.showPowerPlayCountdown('Power Play Starts In', 'Power Play!!')
+      return true
+    }
+
+    renderCountdownState()
+
+    this.powerPlayCountdownIntervalId = window.setInterval(() => {
+      if (!renderCountdownState()) {
+        return
+      }
+
+      window.clearInterval(this.powerPlayCountdownIntervalId)
+      this.powerPlayCountdownIntervalId = null
+      this.powerPlayCountdownEndsAt = Date.now() + 1000
+      this.powerPlayStartTimeoutId = window.setTimeout(() => {
+        this.powerPlayStartTimeoutId = null
+        this.isPowerPlayCountdownActive = false
+        this.powerPlayCountdownEndsAt = 0
+        this.startPowerPlay()
+      }, 1000)
+    }, 1000)
+  },
+  startPowerPlay() {
+    if (this.hasCompletedPowerPlay || this.isPowerPlayActive) {
+      return
+    }
+
+    this.activatePowerPlay({remainingMs: POWER_PLAY_DURATION_MS, currentWave: 1})
+  },
+  activatePowerPlay({remainingMs = POWER_PLAY_DURATION_MS, currentWave = 1} = {}) {
+    this.isPowerPlayActive = true
+    this.hasScheduledPowerPlay = false
+    this.powerPlayCurrentWave = currentWave
+    this.powerPlayStartedAt = Date.now() - (POWER_PLAY_DURATION_MS - remainingMs)
+    this.powerPlayEndsAt = Date.now() + remainingMs
+    this.hidePowerPlayCountdown()
+    this.showPowerPlayTimer(remainingMs)
+    this.clearPowerPlayAlmonds()
+    this.spawnPowerPlayAlmondWave(currentWave)
+
+    const elapsedMs = POWER_PLAY_DURATION_MS - remainingMs
+    const secondWaveDelayMs = POWER_PLAY_SECOND_WAVE_AT_MS - elapsedMs
+    if (currentWave === 1 && secondWaveDelayMs > 0) {
+      this.powerPlaySecondWaveTimeoutId = window.setTimeout(() => {
+        this.powerPlaySecondWaveTimeoutId = null
+        this.powerPlayCurrentWave = 2
+        this.spawnPowerPlayAlmondWave(2)
+      }, secondWaveDelayMs)
+    }
+
+    this.powerPlayTimerIntervalId = window.setInterval(() => {
+      const activeRemainingMs = Math.max(0, this.powerPlayEndsAt - Date.now())
+      this.showPowerPlayTimer(activeRemainingMs)
+    }, 1000)
+
+    this.powerPlayEndTimeoutId = window.setTimeout(() => {
+      this.finishPowerPlay()
+    }, remainingMs)
+  },
+  finishPowerPlay() {
+    if (!this.isPowerPlayActive && !this.isPowerPlayCountdownActive) {
+      return
+    }
+
+    this.isPowerPlayActive = false
+    this.isPowerPlayCountdownActive = false
+    this.hasCompletedPowerPlay = true
+
+    if (this.powerPlayCountdownIntervalId) {
+      window.clearInterval(this.powerPlayCountdownIntervalId)
+      this.powerPlayCountdownIntervalId = null
+    }
+    if (this.powerPlayTimerIntervalId) {
+      window.clearInterval(this.powerPlayTimerIntervalId)
+      this.powerPlayTimerIntervalId = null
+    }
+    if (this.powerPlayEndTimeoutId) {
+      window.clearTimeout(this.powerPlayEndTimeoutId)
+      this.powerPlayEndTimeoutId = null
+    }
+    if (this.powerPlaySecondWaveTimeoutId) {
+      window.clearTimeout(this.powerPlaySecondWaveTimeoutId)
+      this.powerPlaySecondWaveTimeoutId = null
+    }
+    this.powerPlayScheduledAt = 0
+    this.powerPlayCountdownEndsAt = 0
+    this.powerPlayEndsAt = 0
+    this.powerPlayCurrentWave = 0
+
+    this.hidePowerPlayCountdown()
+    this.hidePowerPlayTimer()
+    this.clearPowerPlayAlmonds()
+    this.clearPowerPlayState()
+  },
+  showPowerPlayCountdown(label, value) {
+    if (this.powerPlayLabelEl) {
+      this.powerPlayLabelEl.textContent = label
+    }
+    if (this.powerPlayValueEl) {
+      this.powerPlayValueEl.textContent = value
+    }
+    if (this.powerPlayOverlayEl) {
+      this.powerPlayOverlayEl.classList.remove('hidden')
+      this.powerPlayOverlayEl.classList.add('active')
+    }
+  },
+  hidePowerPlayCountdown() {
+    if (!this.powerPlayOverlayEl) return
+    this.powerPlayOverlayEl.classList.add('hidden')
+    this.powerPlayOverlayEl.classList.remove('active')
+  },
+  showPowerPlayTimer(remainingMs) {
+    if (this.powerPlayTimerValueEl) {
+      this.powerPlayTimerValueEl.textContent = this.formatDuration(remainingMs)
+    }
+    if (this.powerPlayTimerEl) {
+      this.powerPlayTimerEl.classList.remove('hidden')
+    }
+  },
+  hidePowerPlayTimer() {
+    if (!this.powerPlayTimerEl) return
+    this.powerPlayTimerEl.classList.add('hidden')
+  },
+  formatDuration(ms) {
+    const totalSeconds = Math.max(0, Math.ceil(Number(ms) / 1000))
+    const minutes = Math.floor(totalSeconds / 60)
+    const seconds = totalSeconds % 60
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+  },
+  isSpawningPausedForPowerPlay() {
+    return this.isPowerPlayActive || this.isPowerPlayCountdownActive
+  },
+  clearPowerPlayAlmonds() {
+    if (!this.el?.sceneEl) return
+
+    const powerPlayAlmonds = this.el.sceneEl.querySelectorAll('[data-power-play="1"]')
+    powerPlayAlmonds.forEach((almondEl) => {
+      if (almondEl.__despawnTimer) {
+        window.clearTimeout(almondEl.__despawnTimer)
+        almondEl.__despawnTimer = null
+      }
+
+      const parentEl = almondEl.parentNode
+      if (parentEl?.parentNode) {
+        parentEl.parentNode.removeChild(parentEl)
+        return
+      }
+
+      if (almondEl.parentNode) {
+        almondEl.parentNode.removeChild(almondEl)
+      }
+    })
+  },
+  spawnPowerPlayAlmondWave(waveNumber = 1) {
+    // Split power play into two lighter waves so the arena stays readable.
+    if (waveNumber > 1) {
+      this.clearPowerPlayAlmonds()
+    }
+
+    const spawnPlan =
+      waveNumber === 1
+        ? [
+            ...Array.from({length: 8}, () => ({type: 'powerplay-ideal', points: 10})),
+            ...Array.from({length: 2}, () => ({type: 'powerplay-special', points: 50})),
+          ]
+        : [
+            ...Array.from({length: 7}, () => ({type: 'powerplay-ideal', points: 10})),
+            ...Array.from({length: 3}, () => ({type: 'powerplay-special', points: 50})),
+          ]
+
+    spawnPlan.forEach((meta, index) => {
+      const angleStep = (Math.PI * 2) / spawnPlan.length
+      const angle = angleStep * index + (Math.random() - 0.5) * 0.2
+      const distance = 24 + Math.random() * 36
+      const almondEl = this.spawnAlmondAroundUser(meta.type, {
+        angle,
+        distance,
+        minRadius: 24,
+        maxRadius: 60,
+      })
+
+      this.tagSpawnedAlmond(almondEl, {
+        ...meta,
+        despawnMs: 60000,
+        isPowerPlay: true,
+      })
+    })
   },
   clearSpawnedAlmonds() {
     if (!this.el?.sceneEl) return
@@ -175,10 +583,14 @@ export const entitySpawnerComponent = {
   setLiveMatchConnected(isConnected) {
     const nextConnectedState = Boolean(isConnected)
     const didDisconnect = this.isLiveMatchConnected && !nextConnectedState
+    const didConnect = !this.isLiveMatchConnected && nextConnectedState
 
     this.isLiveMatchConnected = nextConnectedState
     if (didDisconnect) {
       this.clearSpawnedAlmonds()
+    }
+    if (didConnect) {
+      this.schedulePowerPlay()
     }
     this.renderLiveMatchStatus()
   },
@@ -196,6 +608,9 @@ export const entitySpawnerComponent = {
       el.dataset.spawnType = meta.type
       el.dataset.points = String(meta.points)
       el.dataset.despawnMs = String(meta.despawnMs)
+      if (meta.isPowerPlay) {
+        el.dataset.powerPlay = '1'
+      }
       if (meta.eventKey) {
         el.dataset.eventKey = String(meta.eventKey)
       }
@@ -450,7 +865,7 @@ export const entitySpawnerComponent = {
                 ? 'two_or_three_runs'
                 : ''
       const shouldSpawn = Boolean(eventKey)
-      if (shouldSpawn) {
+      if (shouldSpawn && !this.isSpawningPausedForPowerPlay()) {
         console.log('[bb] spawn trigger:', { kind, runs: runsNum })
         if (
           typeof window !== 'undefined' &&
@@ -460,6 +875,8 @@ export const entitySpawnerComponent = {
         }
         // (2) Almond appears as per IPL API logic and disappears after 20s (50 points).
         this.spawnMatchEventAlmond(eventKey)
+      } else if (shouldSpawn) {
+        console.log('[bb] spawn skipped during power play:', { kind, runs: runsNum })
       } else {
         console.log('[bb] no spawn:', { kind, runs: runsNum })
       }
@@ -472,6 +889,9 @@ export const entitySpawnerComponent = {
     this.prompt.textContent = parts.join(' · ')
   },
   remove() {
+    this.persistPowerPlayState()
+    this.teardownPowerPlayRuntime()
+
     if (this.spawnIntervalId) {
       clearInterval(this.spawnIntervalId)
       this.spawnIntervalId = null
@@ -492,6 +912,7 @@ export const entitySpawnerComponent = {
     if (typeof window !== 'undefined' && typeof window.__cleanupAlmondSpawnKnob === 'function') {
       window.__cleanupAlmondSpawnKnob()
     }
+    window.removeEventListener('pagehide', this.handlePageHide)
 
   },
   showPopup() {
@@ -530,6 +951,12 @@ export const entitySpawnerComponent = {
       return 50
     }
     if (spawnType === 'idle') {
+      return 10
+    }
+    if (spawnType === 'powerplay-special') {
+      return 50
+    }
+    if (spawnType === 'powerplay-ideal') {
       return 10
     }
 
@@ -637,16 +1064,18 @@ export const entitySpawnerComponent = {
     this.renderBallByBallStatus()
     this.showPopup()
   },
-  spawnAlmondAroundUser(spawnType = 'idle') {
+  spawnAlmondAroundUser(spawnType = 'idle', options = {}) {
     if (!this.camera) {
       return null
     }
 
     const cameraPosition = this.camera.object3D.position
-    const minRadius = 20
-    const maxRadius = 80
-    const randomAngle = Math.random() * Math.PI * 2
-    const randomDistance = minRadius + Math.random() * (maxRadius - minRadius)
+    const minRadius = Number.isFinite(options.minRadius) ? options.minRadius : 20
+    const maxRadius = Number.isFinite(options.maxRadius) ? options.maxRadius : 80
+    const randomAngle = Number.isFinite(options.angle) ? options.angle : Math.random() * Math.PI * 2
+    const randomDistance = Number.isFinite(options.distance)
+      ? options.distance
+      : minRadius + Math.random() * (maxRadius - minRadius)
     const spawnX = cameraPosition.x + Math.cos(randomAngle) * randomDistance
     const spawnZ = cameraPosition.z + Math.sin(randomAngle) * randomDistance
 
@@ -687,7 +1116,10 @@ export const entitySpawnerComponent = {
 
 
     console.log('[almond] spawn type:', spawnType)
-    const glowTextureId = spawnType === 'match' ? 'glowTexYellow' : 'glowTex'
+    const glowTextureId =
+      spawnType === 'match' || spawnType === 'powerplay-special'
+        ? 'glowTexYellow'
+        : 'glowTex'
 
     newElement.insertAdjacentHTML('beforeend', `
         <a-entity

@@ -35,6 +35,7 @@ export const entitySpawnerComponent = {
     this.powerPlayOverlayEl = document.getElementById('powerPlayOverlay')
     this.powerPlayLabelEl = document.getElementById('powerPlayLabel')
     this.powerPlayValueEl = document.getElementById('powerPlayValue')
+    this.powerModeBoxEl = document.getElementById('powerModeBox')
     this.powerPlayTimerEl = document.getElementById('powerPlayTimer')
     this.powerPlayTimerValueEl = document.getElementById('powerPlayTimerValue')
     this.camera = document.getElementById('camera')
@@ -75,6 +76,7 @@ export const entitySpawnerComponent = {
 
     this.hidePopup = this.hidePopup.bind(this)
     this.handlePageHide = this.handlePageHide.bind(this)
+    this.handlePageShow = this.handlePageShow.bind(this)
 
     if (this.popupOkBtn) {
       this.popupOkBtn.addEventListener('click', this.hidePopup)
@@ -89,6 +91,7 @@ export const entitySpawnerComponent = {
     this.renderScore()
     this.renderLiveMatchStatus()
     window.addEventListener('pagehide', this.handlePageHide)
+    window.addEventListener('pageshow', this.handlePageShow)
 
     this.spawnIntervalId = null
 
@@ -185,6 +188,14 @@ export const entitySpawnerComponent = {
   handlePageHide() {
     this.persistPowerPlayState()
     this.teardownPowerPlayRuntime()
+    this.resetPowerPlayRuntimeFlags()
+  },
+  handlePageShow(event) {
+    if (!event?.persisted) {
+      return
+    }
+
+    this.restorePowerPlayState()
   },
   readPowerPlayState() {
     if (typeof window === 'undefined' || !window.localStorage) {
@@ -225,6 +236,32 @@ export const entitySpawnerComponent = {
     }
 
     window.localStorage.removeItem(POWER_PLAY_STORAGE_KEY)
+  },
+  shouldForceLiveMatchForDev() {
+    if (typeof window === 'undefined') {
+      return false
+    }
+
+    const searchParams = new window.URLSearchParams(window.location.search || '')
+    if (searchParams.get('forceLiveMatch') === '1') {
+      return true
+    }
+
+    try {
+      if (window.localStorage?.getItem('almondForceLiveMatch') === '1') {
+        return true
+      }
+    } catch (error) {
+      // Ignore storage access issues and fall back to hostname detection.
+    }
+
+    const host = String(window.location.hostname || '').trim().toLowerCase()
+    return Boolean(
+      host &&
+      host !== 'almondwin.com' &&
+      host !== 'www.almondwin.com' &&
+      host !== 'stage.almondwin.com',
+    )
   },
   getPowerPlayPhase() {
     if (this.hasCompletedPowerPlay) {
@@ -329,6 +366,15 @@ export const entitySpawnerComponent = {
     this.hidePowerPlayTimer()
     this.clearPowerPlayAlmonds()
   },
+  resetPowerPlayRuntimeFlags() {
+    this.hasScheduledPowerPlay = false
+    this.isPowerPlayCountdownActive = false
+    this.isPowerPlayActive = false
+    this.powerPlayScheduledAt = 0
+    this.powerPlayCountdownEndsAt = 0
+    this.powerPlayEndsAt = 0
+    this.powerPlayCurrentWave = 0
+  },
   resumeScheduledPowerPlay(remainingMs) {
     this.hasScheduledPowerPlay = true
     this.powerPlayScheduledAt = Date.now() + remainingMs
@@ -371,7 +417,7 @@ export const entitySpawnerComponent = {
         return false
       }
 
-      this.showPowerPlayCountdown('Power Play Starts In', 'Power Play!!')
+      this.showPowerPlayCountdown('', 'Power Play!!')
       return true
     }
 
@@ -486,13 +532,13 @@ export const entitySpawnerComponent = {
     if (this.powerPlayTimerValueEl) {
       this.powerPlayTimerValueEl.textContent = this.formatDuration(remainingMs)
     }
-    if (this.powerPlayTimerEl) {
-      this.powerPlayTimerEl.classList.remove('hidden')
+    if (this.powerModeBoxEl) {
+      this.powerModeBoxEl.classList.remove('hidden')
     }
   },
   hidePowerPlayTimer() {
-    if (!this.powerPlayTimerEl) return
-    this.powerPlayTimerEl.classList.add('hidden')
+    if (!this.powerModeBoxEl) return
+    this.powerModeBoxEl.classList.add('hidden')
   },
   formatDuration(ms) {
     const totalSeconds = Math.max(0, Math.ceil(Number(ms) / 1000))
@@ -677,6 +723,7 @@ export const entitySpawnerComponent = {
     this.bbError = ''
     this.bbNotStarted = false
     this.setLiveMatchConnected(false)
+    const shouldForceLiveMatch = this.shouldForceLiveMatchForDev()
 
     try {
       if (this.prompt) this.prompt.textContent = 'Finding featured match…'
@@ -695,7 +742,9 @@ export const entitySpawnerComponent = {
       ).trim()
       if (!this.bbMatchLabel) this.bbMatchLabel = matchKey
       const status = String(sel?.status || '').toLowerCase()
-      this.bbNotStarted = status === 'not_started'
+      const effectiveStatus =
+        shouldForceLiveMatch && status === 'not_started' ? 'live' : status
+      this.bbNotStarted = effectiveStatus === 'not_started'
       this.hasShownGameEndScreen = false
       console.log(
         '[bb] selected matchKey:',
@@ -704,6 +753,10 @@ export const entitySpawnerComponent = {
         this.bbMatchLabel,
         'status:',
         status,
+        'effectiveStatus:',
+        effectiveStatus,
+        'forcedLive:',
+        shouldForceLiveMatch,
       )
 
       if (this.bbNotStarted) {
@@ -743,8 +796,16 @@ export const entitySpawnerComponent = {
       } else {
         if (this.prompt) this.prompt.textContent = `Match: ${this.bbMatchLabel} (loading…)`
         console.log('[bb] fetching ball-by-ball (initial)…')
-        const json = await getBallByBall(matchKey)
-        this.bbJson = json
+        try {
+          const json = await getBallByBall(matchKey)
+          this.bbJson = json
+        } catch (error) {
+          if (!shouldForceLiveMatch) {
+            throw error
+          }
+          this.bbJson = null
+          console.warn('[bb] initial ball-by-ball unavailable during forced-live dev mode:', error)
+        }
         this.setLiveMatchConnected(true)
         console.log('[bb] ball-by-ball loaded (initial)')
         this.renderBallByBallStatus()
@@ -779,8 +840,15 @@ export const entitySpawnerComponent = {
         console.log('[bb] polling tick: success')
         this.renderBallByBallStatus()
       } catch (e) {
-        this.bbError = e?.message || 'Failed to refresh ball-by-ball'
-        this.setLiveMatchConnected(false)
+        if (shouldForceLiveMatch) {
+          this.bbJson = null
+          this.bbError = ''
+          this.setLiveMatchConnected(true)
+          console.warn('[bb] polling tick: continuing forced-live dev mode despite failure:', e)
+        } else {
+          this.bbError = e?.message || 'Failed to refresh ball-by-ball'
+          this.setLiveMatchConnected(false)
+        }
         console.warn('[bb] polling tick: failed:', e)
         this.renderBallByBallStatus()
       }
@@ -913,6 +981,7 @@ export const entitySpawnerComponent = {
       window.__cleanupAlmondSpawnKnob()
     }
     window.removeEventListener('pagehide', this.handlePageHide)
+    window.removeEventListener('pageshow', this.handlePageShow)
 
   },
   showPopup() {

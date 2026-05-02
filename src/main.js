@@ -29,6 +29,39 @@ let overallPoints = 0
 let unlockedBenefitsCount = 0
 let pendingMatchEventPopupKind = null
 
+const genericGoldenRewardMessages = [
+  {
+    points: 50,
+    title: 'Bone Health Collected',
+    description:
+      'Almonds have Calcium, Magnesium and Phosphorus that contribute to keeping bones strong.',
+  },
+  {
+    points: 50,
+    title: 'Muscle Strength Collected',
+    description:
+      'Almonds have Protein, Vitamin E, and Good Fats that support muscle strength and recovery.',
+  },
+  {
+    points: 50,
+    title: 'Heart Health Collected',
+    description:
+      'Almonds contain Good Fats that help keep the heart healthy.',
+  },
+  {
+    points: 50,
+    title: 'Manage Stress Collected',
+    description:
+      'Almonds are a rich source of Magnesium that helps the body manage stress and supports better sleep.',
+  },
+  {
+    points: 50,
+    title: 'Sustained Energy Collected',
+    description:
+      'The nutrient-dense structure of almonds slows digestion and supports longer-lasting energy.',
+  },
+]
+
 const queueMatchEventPopup = (eventKind) => {
   const normalizedEventKind = String(eventKind || '').trim().toLowerCase()
   if (!normalizedEventKind) {
@@ -332,7 +365,7 @@ const initRewardPopupContent = () => {
     const isMatchReward = Number(points) >= 50
     const normalizedEventKey = resolveMatchRewardEventKey(rewardEventKey)
     const rewardMessages = isMatchReward
-      ? matchRewardMessagesByEvent[normalizedEventKey] || []
+      ? matchRewardMessagesByEvent[normalizedEventKey] || genericGoldenRewardMessages
       : idleRewardMessages
 
     if (!Array.isArray(rewardMessages) || rewardMessages.length === 0) {

@@ -17,6 +17,7 @@ import {
 } from './lib/ballEvents'
 
 const POWER_PLAY_STORAGE_KEY = 'almondPowerPlayState'
+const POWER_PLAY_PLAYED_STORAGE_KEY = 'almondPowerPlayPlayedMatches'
 const POWER_PLAY_INITIAL_DELAY_MS = 10000
 const POWER_PLAY_COUNTDOWN_MS = 5000
 const POWER_PLAY_DURATION_MS = 60000
@@ -36,6 +37,7 @@ export const entitySpawnerComponent = {
     this.powerPlayLabelEl = document.getElementById('powerPlayLabel')
     this.powerPlayValueEl = document.getElementById('powerPlayValue')
     this.powerModeBoxEl = document.getElementById('powerModeBox')
+    this.powerPlayScreenEl = document.getElementById('powerplayModeScreen')
     this.powerPlayTimerEl = document.getElementById('powerPlayTimer')
     this.powerPlayTimerValueEl = document.getElementById('powerPlayTimerValue')
     this.camera = document.getElementById('camera')
@@ -237,31 +239,49 @@ export const entitySpawnerComponent = {
 
     window.localStorage.removeItem(POWER_PLAY_STORAGE_KEY)
   },
-  shouldForceLiveMatchForDev() {
-    if (typeof window === 'undefined') {
-      return false
-    }
-
-    const searchParams = new window.URLSearchParams(window.location.search || '')
-    if (searchParams.get('forceLiveMatch') === '1') {
-      return true
+  readPowerPlayPlayedMap() {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return {}
     }
 
     try {
-      if (window.localStorage?.getItem('almondForceLiveMatch') === '1') {
-        return true
+      const raw = window.localStorage.getItem(POWER_PLAY_PLAYED_STORAGE_KEY)
+      if (!raw) {
+        return {}
       }
+
+      const parsed = JSON.parse(raw)
+      return parsed && typeof parsed === 'object' ? parsed : {}
     } catch (error) {
-      // Ignore storage access issues and fall back to hostname detection.
+      return {}
+    }
+  },
+  writePowerPlayPlayedMap(playedMap) {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return
     }
 
-    const host = String(window.location.hostname || '').trim().toLowerCase()
-    return Boolean(
-      host &&
-      host !== 'almondwin.com' &&
-      host !== 'www.almondwin.com' &&
-      host !== 'stage.almondwin.com',
-    )
+    window.localStorage.setItem(POWER_PLAY_PLAYED_STORAGE_KEY, JSON.stringify(playedMap))
+  },
+  hasPlayedPowerPlayForMatch(matchKey = this.bbMatchKey) {
+    if (!matchKey) {
+      return false
+    }
+
+    const playedMap = this.readPowerPlayPlayedMap()
+    return playedMap[matchKey] === true
+  },
+  markPowerPlayPlayedForMatch(matchKey = this.bbMatchKey) {
+    if (!matchKey) {
+      return
+    }
+
+    const playedMap = this.readPowerPlayPlayedMap()
+    playedMap[matchKey] = true
+    this.writePowerPlayPlayedMap(playedMap)
+  },
+  syncCompletedPowerPlayFlag() {
+    this.hasCompletedPowerPlay = this.hasPlayedPowerPlayForMatch()
   },
   getPowerPlayPhase() {
     if (this.hasCompletedPowerPlay) {
@@ -364,6 +384,7 @@ export const entitySpawnerComponent = {
 
     this.hidePowerPlayCountdown()
     this.hidePowerPlayTimer()
+    this.setPowerPlayScreenActive(false)
     this.clearPowerPlayAlmonds()
   },
   resetPowerPlayRuntimeFlags() {
@@ -384,6 +405,8 @@ export const entitySpawnerComponent = {
     }, remainingMs)
   },
   schedulePowerPlay() {
+    this.syncCompletedPowerPlayFlag()
+
     if (this.hasScheduledPowerPlay || this.hasCompletedPowerPlay) {
       return
     }
@@ -453,6 +476,7 @@ export const entitySpawnerComponent = {
     this.powerPlayStartedAt = Date.now() - (POWER_PLAY_DURATION_MS - remainingMs)
     this.powerPlayEndsAt = Date.now() + remainingMs
     this.hidePowerPlayCountdown()
+    this.setPowerPlayScreenActive(true)
     this.showPowerPlayTimer(remainingMs)
     this.clearPowerPlayAlmonds()
     this.spawnPowerPlayAlmondWave(currentWave)
@@ -508,7 +532,9 @@ export const entitySpawnerComponent = {
 
     this.hidePowerPlayCountdown()
     this.hidePowerPlayTimer()
+    this.setPowerPlayScreenActive(false)
     this.clearPowerPlayAlmonds()
+    this.markPowerPlayPlayedForMatch()
     this.clearPowerPlayState()
   },
   showPowerPlayCountdown(label, value) {
@@ -539,6 +565,10 @@ export const entitySpawnerComponent = {
   hidePowerPlayTimer() {
     if (!this.powerModeBoxEl) return
     this.powerModeBoxEl.classList.add('hidden')
+  },
+  setPowerPlayScreenActive(isActive) {
+    if (!this.powerPlayScreenEl) return
+    this.powerPlayScreenEl.classList.toggle('powerplay-active', Boolean(isActive))
   },
   formatDuration(ms) {
     const totalSeconds = Math.max(0, Math.ceil(Number(ms) / 1000))
@@ -723,7 +753,6 @@ export const entitySpawnerComponent = {
     this.bbError = ''
     this.bbNotStarted = false
     this.setLiveMatchConnected(false)
-    const shouldForceLiveMatch = this.shouldForceLiveMatchForDev()
 
     try {
       if (this.prompt) this.prompt.textContent = 'Finding featured match…'
@@ -742,9 +771,8 @@ export const entitySpawnerComponent = {
       ).trim()
       if (!this.bbMatchLabel) this.bbMatchLabel = matchKey
       const status = String(sel?.status || '').toLowerCase()
-      const effectiveStatus =
-        shouldForceLiveMatch && status === 'not_started' ? 'live' : status
-      this.bbNotStarted = effectiveStatus === 'not_started'
+      this.syncCompletedPowerPlayFlag()
+      this.bbNotStarted = status === 'not_started'
       this.hasShownGameEndScreen = false
       console.log(
         '[bb] selected matchKey:',
@@ -753,10 +781,6 @@ export const entitySpawnerComponent = {
         this.bbMatchLabel,
         'status:',
         status,
-        'effectiveStatus:',
-        effectiveStatus,
-        'forcedLive:',
-        shouldForceLiveMatch,
       )
 
       if (this.bbNotStarted) {
@@ -796,16 +820,8 @@ export const entitySpawnerComponent = {
       } else {
         if (this.prompt) this.prompt.textContent = `Match: ${this.bbMatchLabel} (loading…)`
         console.log('[bb] fetching ball-by-ball (initial)…')
-        try {
-          const json = await getBallByBall(matchKey)
-          this.bbJson = json
-        } catch (error) {
-          if (!shouldForceLiveMatch) {
-            throw error
-          }
-          this.bbJson = null
-          console.warn('[bb] initial ball-by-ball unavailable during forced-live dev mode:', error)
-        }
+        const json = await getBallByBall(matchKey)
+        this.bbJson = json
         this.setLiveMatchConnected(true)
         console.log('[bb] ball-by-ball loaded (initial)')
         this.renderBallByBallStatus()
@@ -840,15 +856,8 @@ export const entitySpawnerComponent = {
         console.log('[bb] polling tick: success')
         this.renderBallByBallStatus()
       } catch (e) {
-        if (shouldForceLiveMatch) {
-          this.bbJson = null
-          this.bbError = ''
-          this.setLiveMatchConnected(true)
-          console.warn('[bb] polling tick: continuing forced-live dev mode despite failure:', e)
-        } else {
-          this.bbError = e?.message || 'Failed to refresh ball-by-ball'
-          this.setLiveMatchConnected(false)
-        }
+        this.bbError = e?.message || 'Failed to refresh ball-by-ball'
+        this.setLiveMatchConnected(false)
         console.warn('[bb] polling tick: failed:', e)
         this.renderBallByBallStatus()
       }

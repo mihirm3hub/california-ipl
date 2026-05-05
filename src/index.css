@@ -12,17 +12,17 @@
   --color-black: #000000;
   --screen-max: 576px;
 
-      /* Typography */
-    --fs-h1: 1.5rem;
-    --fs-h2: 1.5rem;
-    --fs-h3: 1.75rem;
-    --fs-smallest: 0.5rem;
+  /* Typography */
+  --fs-h1: 1.5rem;
+  --fs-h2: 1.5rem;
+  --fs-h3: 1.75rem;
+  --fs-smallest: 0.5rem;
 
-    /* Font Weight */
-    --fw-reg: 400;
-    --fw-med: 500;
-    --fw-semi-bold: 600;
-    --fw-bold: 700;
+  /* Font Weight */
+  --fw-reg: 400;
+  --fw-med: 500;
+  --fw-semi-bold: 600;
+  --fw-bold: 700;
 }
 
 * {
@@ -802,9 +802,9 @@ body.menu-open {
   border-radius: 20px;
   padding: 20px;
 
-    /* ✅ IMAGE BACKGROUND */
-    background: url('https://stage.almondwin.com/game/d303c6cd0d5461ca53be.png') no-repeat center center;
-    background-size: cover;
+  /* ✅ IMAGE BACKGROUND */
+  background: url('https://stage.almondwin.com/game/d303c6cd0d5461ca53be.png') no-repeat center center;
+  background-size: cover;
 
   text-align: center;
   position: relative;
@@ -1007,7 +1007,7 @@ body.menu-open {
 
 .power-play-card h2 {
   margin: 0;
-  color: #2f2e2e;
+  color: var(--color-white);
   font-size: clamp(42px, 14vw, 72px);
   line-height: 0.9;
   font-family: var(--font-display);
@@ -1015,12 +1015,50 @@ body.menu-open {
   text-transform: uppercase;
 }
 
+.power-mode-box {
+  width: 100%;
+  padding-top: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* LEFT TEXT */
+.power-mode-box .power-left {
+  font-size: 14px;
+  line-height: 1.2;
+  font-weight: var(--fw-med);
+  color: var(--color-white);
+}
+
+.power-mode-box .power-left span {
+  color: #D1FAEC;
+  font-weight: var(--fw-bold);
+}
+
+/* RIGHT CARD */
+.power-mode-box .power-right {
+  /* background: linear-gradient(180deg, #99CCFB 0%, #FCFBF7 100%); */
+  /* padding: 6px 8px; */
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 1.2;
+  /* color: #2F2F2F; */
+  font-weight: var(--fw-med);
+
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  /* box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); */
+}
+
 .power-play-timer {
-  position: fixed;
+  /* position: fixed;
   top: 30px;
   left: 50%;
-  transform: translateX(-50%);
-  min-width: 176px;
+  transform: translateX(-50%); */
+  min-width: 150px;
   padding: 10px 16px;
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.28);
@@ -1032,7 +1070,7 @@ body.menu-open {
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  z-index: 56;
+  /* z-index: 56; */
   pointer-events: none;
 }
 
@@ -1050,12 +1088,57 @@ body.menu-open {
 
 .power-play-timer__label {
   color: var(--color-white);
-  font-size: 20px;
+  font-size: 16px;
 }
 
 .power-play-timer__value {
   color: #ffe288;
-  font-size: 24px;
+  font-size: 20px;
+}
+
+/* ===== POWERPLAY PREMIUM OVERLAY ===== */
+.powerplay-mode-screen.powerplay-active::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+
+  /* 🔥 layered gradient */
+  background:
+    radial-gradient(circle at 20% 100%,
+      rgba(255, 120, 50, 0.6),
+      transparent 60%),
+    linear-gradient(to top,
+      rgba(255, 81, 13, 1) 0%,
+      rgba(255, 81, 13, 0.85) 25%,
+      rgba(255, 120, 50, 0.6) 35%,
+      rgba(255, 159, 90, 0) 60%,
+      transparent 100%);
+
+  background-size: 100% 200%, 100% 200%;
+
+  animation: powerplayFlow 3s ease-in-out infinite alternate;
+}
+
+@keyframes powerplayFlow {
+  0% {
+    background-position: 20% 0%, 0% 0%;
+    filter: blur(0px);
+    transform: scale(1);
+  }
+
+  50% {
+    background-position: 20% 10%, 0% 10%;
+    filter: blur(1px);
+    transform: scale(1.02);
+  }
+
+  100% {
+    background-position: 20% 20%, 0% 20%;
+    filter: blur(1.6px);
+    transform: scale(1.04);
+  }
 }
 
 /* ===== POPUP ===== */

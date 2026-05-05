@@ -17,6 +17,7 @@ import {
 } from './lib/ballEvents'
 
 const POWER_PLAY_STORAGE_KEY = 'almondPowerPlayState'
+const POWER_PLAY_PLAYED_STORAGE_KEY = 'almondPowerPlayPlayedMatches'
 const POWER_PLAY_INITIAL_DELAY_MS = 10000
 const POWER_PLAY_COUNTDOWN_MS = 5000
 const POWER_PLAY_DURATION_MS = 60000
@@ -35,6 +36,8 @@ export const entitySpawnerComponent = {
     this.powerPlayOverlayEl = document.getElementById('powerPlayOverlay')
     this.powerPlayLabelEl = document.getElementById('powerPlayLabel')
     this.powerPlayValueEl = document.getElementById('powerPlayValue')
+    this.powerModeBoxEl = document.getElementById('powerModeBox')
+    this.powerPlayScreenEl = document.getElementById('powerplayModeScreen')
     this.powerPlayTimerEl = document.getElementById('powerPlayTimer')
     this.powerPlayTimerValueEl = document.getElementById('powerPlayTimerValue')
     this.camera = document.getElementById('camera')
@@ -51,6 +54,9 @@ export const entitySpawnerComponent = {
     this.bbJson = null
     this.bbError = ''
     this.bbNotStarted = false
+    this.bbMatchStartTime = null
+    this.hasMatchEnded = false
+    this.liveMatchTestOverride = null
     this.hasShownGameEndScreen = false
     this.isLiveMatchConnected = false
     this.score = 0
@@ -75,6 +81,7 @@ export const entitySpawnerComponent = {
 
     this.hidePopup = this.hidePopup.bind(this)
     this.handlePageHide = this.handlePageHide.bind(this)
+    this.handlePageShow = this.handlePageShow.bind(this)
 
     if (this.popupOkBtn) {
       this.popupOkBtn.addEventListener('click', this.hidePopup)
@@ -89,6 +96,7 @@ export const entitySpawnerComponent = {
     this.renderScore()
     this.renderLiveMatchStatus()
     window.addEventListener('pagehide', this.handlePageHide)
+    window.addEventListener('pageshow', this.handlePageShow)
 
     this.spawnIntervalId = null
 
@@ -145,6 +153,20 @@ export const entitySpawnerComponent = {
       spawnFromConsole(value)
     }
 
+    window.setLiveMatchTest = (value) => {
+      const forcedState = Boolean(value)
+      this.liveMatchTestOverride = forcedState
+
+      if (forcedState) {
+        this.hasMatchEnded = false
+        this.hasShownGameEndScreen = false
+      }
+
+      this.setLiveMatchConnected(forcedState)
+      console.log('[bb] live match test override:', forcedState ? 'active' : 'inactive')
+      return forcedState
+    }
+
     Object.defineProperty(window, 'almondSpawnType', {
       configurable: true,
       enumerable: false,
@@ -159,12 +181,14 @@ export const entitySpawnerComponent = {
 
     window.__cleanupAlmondSpawnKnob = () => {
       delete window.spawnAlmondType
+      delete window.setLiveMatchTest
       delete window.almondSpawnType
       delete window.__cleanupAlmondSpawnKnob
     }
 
     console.log("[almond] test knob ready: set window.almondSpawnType = 'idle' | 'match'")
     console.log("[almond] helper ready: window.spawnAlmondType('idle' | 'match')")
+    console.log('[bb] helper ready: window.setLiveMatchTest(true | false)')
   },
   renderScore() {
     console.log('[score] rendering score:', this.score)
@@ -177,14 +201,26 @@ export const entitySpawnerComponent = {
   },
   canSpawnAlmonds() {
     return Boolean(
+      !this.isMatchEndedForSpawning() &&
       this.isLiveMatchConnected &&
       this.el?.sceneEl &&
       !this.isSpawningPausedForPowerPlay()
     )
   },
+  isMatchEndedForSpawning() {
+    return this.liveMatchTestOverride === true ? false : this.hasMatchEnded
+  },
   handlePageHide() {
     this.persistPowerPlayState()
     this.teardownPowerPlayRuntime()
+    this.resetPowerPlayRuntimeFlags()
+  },
+  handlePageShow(event) {
+    if (!event?.persisted) {
+      return
+    }
+
+    this.restorePowerPlayState()
   },
   readPowerPlayState() {
     if (typeof window === 'undefined' || !window.localStorage) {
@@ -225,6 +261,50 @@ export const entitySpawnerComponent = {
     }
 
     window.localStorage.removeItem(POWER_PLAY_STORAGE_KEY)
+  },
+  readPowerPlayPlayedMap() {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return {}
+    }
+
+    try {
+      const raw = window.localStorage.getItem(POWER_PLAY_PLAYED_STORAGE_KEY)
+      if (!raw) {
+        return {}
+      }
+
+      const parsed = JSON.parse(raw)
+      return parsed && typeof parsed === 'object' ? parsed : {}
+    } catch (error) {
+      return {}
+    }
+  },
+  writePowerPlayPlayedMap(playedMap) {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return
+    }
+
+    window.localStorage.setItem(POWER_PLAY_PLAYED_STORAGE_KEY, JSON.stringify(playedMap))
+  },
+  hasPlayedPowerPlayForMatch(matchKey = this.bbMatchKey) {
+    if (!matchKey) {
+      return false
+    }
+
+    const playedMap = this.readPowerPlayPlayedMap()
+    return playedMap[matchKey] === true
+  },
+  markPowerPlayPlayedForMatch(matchKey = this.bbMatchKey) {
+    if (!matchKey) {
+      return
+    }
+
+    const playedMap = this.readPowerPlayPlayedMap()
+    playedMap[matchKey] = true
+    this.writePowerPlayPlayedMap(playedMap)
+  },
+  syncCompletedPowerPlayFlag() {
+    this.hasCompletedPowerPlay = this.hasPlayedPowerPlayForMatch()
   },
   getPowerPlayPhase() {
     if (this.hasCompletedPowerPlay) {
@@ -327,7 +407,53 @@ export const entitySpawnerComponent = {
 
     this.hidePowerPlayCountdown()
     this.hidePowerPlayTimer()
+    this.setPowerPlayScreenActive(false)
     this.clearPowerPlayAlmonds()
+  },
+  resetPowerPlayRuntimeFlags() {
+    this.hasScheduledPowerPlay = false
+    this.isPowerPlayCountdownActive = false
+    this.isPowerPlayActive = false
+    this.powerPlayScheduledAt = 0
+    this.powerPlayCountdownEndsAt = 0
+    this.powerPlayEndsAt = 0
+    this.powerPlayCurrentWave = 0
+  },
+  getPowerPlayTimelineState() {
+    if (!this.bbMatchStartTime || Number.isNaN(this.bbMatchStartTime.getTime())) {
+      return null
+    }
+
+    const elapsedMs = Math.max(0, Date.now() - this.bbMatchStartTime.getTime())
+    if (elapsedMs < POWER_PLAY_INITIAL_DELAY_MS) {
+      return {
+        phase: 'scheduled',
+        remainingMs: POWER_PLAY_INITIAL_DELAY_MS - elapsedMs,
+      }
+    }
+
+    const countdownElapsedMs = elapsedMs - POWER_PLAY_INITIAL_DELAY_MS
+    if (countdownElapsedMs < POWER_PLAY_COUNTDOWN_MS) {
+      return {
+        phase: 'countdown',
+        remainingMs: POWER_PLAY_COUNTDOWN_MS - countdownElapsedMs,
+      }
+    }
+
+    const activeElapsedMs = countdownElapsedMs - POWER_PLAY_COUNTDOWN_MS
+    if (activeElapsedMs < POWER_PLAY_DURATION_MS) {
+      return {
+        phase: 'active',
+        remainingMs: POWER_PLAY_DURATION_MS - activeElapsedMs,
+        currentWave: activeElapsedMs >= POWER_PLAY_SECOND_WAVE_AT_MS ? 2 : 1,
+      }
+    }
+
+    return {
+      phase: 'expired',
+      remainingMs: 0,
+      currentWave: 0,
+    }
   },
   resumeScheduledPowerPlay(remainingMs) {
     this.hasScheduledPowerPlay = true
@@ -338,11 +464,33 @@ export const entitySpawnerComponent = {
     }, remainingMs)
   },
   schedulePowerPlay() {
+    this.syncCompletedPowerPlayFlag()
+
     if (this.hasScheduledPowerPlay || this.hasCompletedPowerPlay) {
       return
     }
 
     if (this.restorePowerPlayState()) {
+      return
+    }
+
+    const timelineState = this.getPowerPlayTimelineState()
+    if (timelineState?.phase === 'scheduled' && timelineState.remainingMs > 0) {
+      this.resumeScheduledPowerPlay(timelineState.remainingMs)
+      return
+    }
+
+    if (timelineState?.phase === 'countdown' && timelineState.remainingMs > 0) {
+      this.startPowerPlayCountdown(timelineState.remainingMs)
+      return
+    }
+
+    if (timelineState?.phase === 'active' && timelineState.remainingMs > 0) {
+      this.activatePowerPlay(timelineState)
+      return
+    }
+
+    if (timelineState?.phase === 'expired') {
       return
     }
 
@@ -371,7 +519,7 @@ export const entitySpawnerComponent = {
         return false
       }
 
-      this.showPowerPlayCountdown('Power Play Starts In', 'Power Play!!')
+      this.showPowerPlayCountdown('', 'Power Play!!')
       return true
     }
 
@@ -407,6 +555,7 @@ export const entitySpawnerComponent = {
     this.powerPlayStartedAt = Date.now() - (POWER_PLAY_DURATION_MS - remainingMs)
     this.powerPlayEndsAt = Date.now() + remainingMs
     this.hidePowerPlayCountdown()
+    this.setPowerPlayScreenActive(true)
     this.showPowerPlayTimer(remainingMs)
     this.clearPowerPlayAlmonds()
     this.spawnPowerPlayAlmondWave(currentWave)
@@ -462,7 +611,9 @@ export const entitySpawnerComponent = {
 
     this.hidePowerPlayCountdown()
     this.hidePowerPlayTimer()
+    this.setPowerPlayScreenActive(false)
     this.clearPowerPlayAlmonds()
+    this.markPowerPlayPlayedForMatch()
     this.clearPowerPlayState()
   },
   showPowerPlayCountdown(label, value) {
@@ -486,13 +637,17 @@ export const entitySpawnerComponent = {
     if (this.powerPlayTimerValueEl) {
       this.powerPlayTimerValueEl.textContent = this.formatDuration(remainingMs)
     }
-    if (this.powerPlayTimerEl) {
-      this.powerPlayTimerEl.classList.remove('hidden')
+    if (this.powerModeBoxEl) {
+      this.powerModeBoxEl.classList.remove('hidden')
     }
   },
   hidePowerPlayTimer() {
-    if (!this.powerPlayTimerEl) return
-    this.powerPlayTimerEl.classList.add('hidden')
+    if (!this.powerModeBoxEl) return
+    this.powerModeBoxEl.classList.add('hidden')
+  },
+  setPowerPlayScreenActive(isActive) {
+    if (!this.powerPlayScreenEl) return
+    this.powerPlayScreenEl.classList.toggle('powerplay-active', Boolean(isActive))
   },
   formatDuration(ms) {
     const totalSeconds = Math.max(0, Math.ceil(Number(ms) / 1000))
@@ -581,12 +736,18 @@ export const entitySpawnerComponent = {
     })
   },
   setLiveMatchConnected(isConnected) {
-    const nextConnectedState = Boolean(isConnected)
+    const nextConnectedState =
+      typeof this.liveMatchTestOverride === 'boolean'
+        ? this.liveMatchTestOverride
+        : Boolean(isConnected)
     const didDisconnect = this.isLiveMatchConnected && !nextConnectedState
     const didConnect = !this.isLiveMatchConnected && nextConnectedState
 
     this.isLiveMatchConnected = nextConnectedState
     if (didDisconnect) {
+      this.persistPowerPlayState()
+      this.teardownPowerPlayRuntime()
+      this.resetPowerPlayRuntimeFlags()
       this.clearSpawnedAlmonds()
     }
     if (didConnect) {
@@ -685,6 +846,7 @@ export const entitySpawnerComponent = {
       const matchKey = sel?.matchKey || ''
       if (!matchKey) throw new Error('No upcoming/ongoing match found')
       this.bbMatchKey = matchKey
+      this.bbMatchStartTime = sel?.startTime instanceof Date ? sel.startTime : null
       this.bbMatchLabel = String(
         sel?.match?.short_name ||
         sel?.match?.shortName ||
@@ -695,7 +857,9 @@ export const entitySpawnerComponent = {
       ).trim()
       if (!this.bbMatchLabel) this.bbMatchLabel = matchKey
       const status = String(sel?.status || '').toLowerCase()
+      this.syncCompletedPowerPlayFlag()
       this.bbNotStarted = status === 'not_started'
+      this.hasMatchEnded = isCompletedMatchStatus(status)
       this.hasShownGameEndScreen = false
       console.log(
         '[bb] selected matchKey:',
@@ -705,6 +869,15 @@ export const entitySpawnerComponent = {
         'status:',
         status,
       )
+
+      if (this.hasMatchEnded) {
+        this.handleGameEndRedirect({
+          matchKey,
+          status,
+          source: 'featured-selection',
+        })
+        return
+      }
 
       if (this.bbNotStarted) {
         console.log(
@@ -792,6 +965,11 @@ export const entitySpawnerComponent = {
     }
 
     this.hasShownGameEndScreen = true
+    this.hasMatchEnded = true
+    this.teardownPowerPlayRuntime()
+    this.resetPowerPlayRuntimeFlags()
+    this.clearPowerPlayState()
+    this.clearSpawnedAlmonds()
     this.stopBallByBallStreaming()
     console.log('[game-end] active match completed', { matchKey, status, source })
 
@@ -812,6 +990,7 @@ export const entitySpawnerComponent = {
       this.bbStatusIntervalId = null
       console.log('[bb] status polling stopped')
     }
+    this.bbMatchStartTime = null
     this.setLiveMatchConnected(false)
   },
   renderBallByBallStatus() {
@@ -848,6 +1027,10 @@ export const entitySpawnerComponent = {
 
     // If we got a ball, match has started.
     this.bbNotStarted = false
+
+    if (this.hasMatchEnded) {
+      return
+    }
 
     const sig = ballSignature(latest)
     if (sig && sig !== this.prevBallSig) {
@@ -913,6 +1096,7 @@ export const entitySpawnerComponent = {
       window.__cleanupAlmondSpawnKnob()
     }
     window.removeEventListener('pagehide', this.handlePageHide)
+    window.removeEventListener('pageshow', this.handlePageShow)
 
   },
   showPopup() {

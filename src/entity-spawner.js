@@ -17,7 +17,8 @@ import {
 } from './lib/ballEvents'
 
 const POWER_PLAY_STORAGE_KEY = 'almondPowerPlayState'
-const POWER_PLAY_PLAYED_STORAGE_KEY = 'almondPowerPlayPlayedMatches'
+const POWER_PLAY_SESSION_KEY = 'almondPowerPlaySessionKey'
+const POWER_PLAY_COMPLETED_SESSION_KEY = 'almondPowerPlayCompletedSession'
 const POWER_PLAY_INITIAL_DELAY_MS = 10000
 const POWER_PLAY_COUNTDOWN_MS = 5000
 const POWER_PLAY_DURATION_MS = 60000
@@ -103,21 +104,21 @@ export const entitySpawnerComponent = {
     // (1) Almond appears every 30s and disappears in 10s (10 points).
     this.idleSpawnIntervalId = window.setInterval(() => {
       if (!this.canSpawnAlmonds()) {
-        console.log('[almond] idle spawn skipped: live match is not connected')
+        // console.log('[almond] idle spawn skipped: live match is not connected')
         return
       }
 
       this.idleSpawnCount += 1
-      console.log('[almond] 30s idle spawn tick:', {
-        count: this.idleSpawnCount,
-        elapsedSeconds: Math.round((Date.now() - this.idleSpawnStartedAt) / 1000),
-      })
+      // console.log('[almond] 30s idle spawn tick:', {
+      //   count: this.idleSpawnCount,
+      //   elapsedSeconds: Math.round((Date.now() - this.idleSpawnStartedAt) / 1000),
+      // })
       this.spawnIdleAlmond()
     }, 10000)
 
     console.log('[bb] init: starting featured match streaming')
     this.startBallByBallStreaming()
-    this.registerConsoleSpawnKnob()
+    // this.registerConsoleSpawnKnob()
   },
   registerConsoleSpawnKnob() {
     if (typeof window === 'undefined') return
@@ -131,12 +132,12 @@ export const entitySpawnerComponent = {
     const spawnFromConsole = (value) => {
       const normalized = String(value || '').trim().toLowerCase()
       if (normalized !== 'idle' && normalized !== 'match') {
-        console.warn("[almond] use 'idle' or 'match'")
+        // console.warn("[almond] use 'idle' or 'match'")
         return
       }
 
       if (!this.canSpawnAlmonds()) {
-        console.warn('[almond] spawn blocked: live match is not connected')
+        // console.warn('[almond] spawn blocked: live match is not connected')
         return
       }
 
@@ -146,7 +147,7 @@ export const entitySpawnerComponent = {
           : { type: 'idle', points: 10, despawnMs: 10000 }
       const almondEl = this.spawnAlmondAroundUser(meta.type)
       this.tagSpawnedAlmond(almondEl, meta)
-      console.log('[almond] console spawn:', normalized)
+      // console.log('[almond] console spawn:', normalized)
     }
 
     window.spawnAlmondType = (value) => {
@@ -163,7 +164,7 @@ export const entitySpawnerComponent = {
       }
 
       this.setLiveMatchConnected(forcedState)
-      console.log('[bb] live match test override:', forcedState ? 'active' : 'inactive')
+      // console.log('[bb] live match test override:', forcedState ? 'active' : 'inactive')
       return forcedState
     }
 
@@ -186,18 +187,14 @@ export const entitySpawnerComponent = {
       delete window.__cleanupAlmondSpawnKnob
     }
 
-    console.log("[almond] test knob ready: set window.almondSpawnType = 'idle' | 'match'")
-    console.log("[almond] helper ready: window.spawnAlmondType('idle' | 'match')")
-    console.log('[bb] helper ready: window.setLiveMatchTest(true | false)')
+    // console.log("[almond] test knob ready: set window.almondSpawnType = 'idle' | 'match'")
+    // console.log("[almond] helper ready: window.spawnAlmondType('idle' | 'match')")
+    // console.log('[bb] helper ready: window.setLiveMatchTest(true | false)')
   },
   renderScore() {
-    console.log('[score] rendering score:', this.score)
     if (!this.scoreEl) return
-    console.log('[score] scoreEl:', this.scoreEl)
-    console.log('[score] score:', this.score)
     const awardText = this.lastAwardedPoints > 0 ? ` (+${this.lastAwardedPoints})` : ''
     this.scoreEl.textContent = `Score: ${this.score}`
-    console.log('[score] scoreEl.textContent:', this.scoreEl.textContent)
   },
   canSpawnAlmonds() {
     return Boolean(
@@ -243,6 +240,12 @@ export const entitySpawnerComponent = {
         return null
       }
 
+      const sessionKey = this.getPowerPlaySessionKey()
+      if (parsed.sessionKey && sessionKey && parsed.sessionKey !== sessionKey) {
+        window.localStorage.removeItem(POWER_PLAY_STORAGE_KEY)
+        return null
+      }
+
       return parsed
     } catch (error) {
       return null
@@ -262,49 +265,52 @@ export const entitySpawnerComponent = {
 
     window.localStorage.removeItem(POWER_PLAY_STORAGE_KEY)
   },
-  readPowerPlayPlayedMap() {
-    if (typeof window === 'undefined' || !window.localStorage) {
-      return {}
+  getPowerPlaySessionKey() {
+    if (typeof window === 'undefined' || !window.sessionStorage) {
+      return ''
     }
 
-    try {
-      const raw = window.localStorage.getItem(POWER_PLAY_PLAYED_STORAGE_KEY)
-      if (!raw) {
-        return {}
-      }
-
-      const parsed = JSON.parse(raw)
-      return parsed && typeof parsed === 'object' ? parsed : {}
-    } catch (error) {
-      return {}
-    }
+    const sessionKey = window.sessionStorage.getItem(POWER_PLAY_SESSION_KEY)
+    return typeof sessionKey === 'string' ? sessionKey : ''
   },
-  writePowerPlayPlayedMap(playedMap) {
-    if (typeof window === 'undefined' || !window.localStorage) {
+  ensurePowerPlaySessionKey() {
+    if (typeof window === 'undefined' || !window.sessionStorage) {
+      return ''
+    }
+
+    const existingKey = this.getPowerPlaySessionKey()
+    if (existingKey) {
+      return existingKey
+    }
+
+    const nextKey = `powerplay-session-${Date.now()}`
+    window.sessionStorage.setItem(POWER_PLAY_SESSION_KEY, nextKey)
+    return nextKey
+  },
+  getCompletedPowerPlaySessionKey() {
+    if (typeof window === 'undefined' || !window.sessionStorage) {
+      return ''
+    }
+
+    const completedKey = window.sessionStorage.getItem(POWER_PLAY_COMPLETED_SESSION_KEY)
+    return typeof completedKey === 'string' ? completedKey : ''
+  },
+  hasCompletedPowerPlayForCurrentSession() {
+    const sessionKey = this.getPowerPlaySessionKey()
+    return Boolean(sessionKey && this.getCompletedPowerPlaySessionKey() === sessionKey)
+  },
+  markPowerPlayCompletedForCurrentSession() {
+    if (typeof window === 'undefined' || !window.sessionStorage) {
       return
     }
 
-    window.localStorage.setItem(POWER_PLAY_PLAYED_STORAGE_KEY, JSON.stringify(playedMap))
-  },
-  hasPlayedPowerPlayForMatch(matchKey = this.bbMatchKey) {
-    if (!matchKey) {
-      return false
+    const sessionKey = this.ensurePowerPlaySessionKey()
+    if (sessionKey) {
+      window.sessionStorage.setItem(POWER_PLAY_COMPLETED_SESSION_KEY, sessionKey)
     }
-
-    const playedMap = this.readPowerPlayPlayedMap()
-    return playedMap[matchKey] === true
-  },
-  markPowerPlayPlayedForMatch(matchKey = this.bbMatchKey) {
-    if (!matchKey) {
-      return
-    }
-
-    const playedMap = this.readPowerPlayPlayedMap()
-    playedMap[matchKey] = true
-    this.writePowerPlayPlayedMap(playedMap)
   },
   syncCompletedPowerPlayFlag() {
-    this.hasCompletedPowerPlay = this.hasPlayedPowerPlayForMatch()
+    this.hasCompletedPowerPlay = this.hasCompletedPowerPlayForCurrentSession()
   },
   getPowerPlayPhase() {
     if (this.hasCompletedPowerPlay) {
@@ -348,6 +354,7 @@ export const entitySpawnerComponent = {
 
     const state = {
       matchKey: this.bbMatchKey,
+      sessionKey: this.ensurePowerPlaySessionKey(),
       phase,
       remainingMs: this.getPowerPlayRemainingMs(),
       currentWave: this.powerPlayCurrentWave,
@@ -419,41 +426,9 @@ export const entitySpawnerComponent = {
     this.powerPlayEndsAt = 0
     this.powerPlayCurrentWave = 0
   },
-  getPowerPlayTimelineState() {
-    if (!this.bbMatchStartTime || Number.isNaN(this.bbMatchStartTime.getTime())) {
-      return null
-    }
-
-    const elapsedMs = Math.max(0, Date.now() - this.bbMatchStartTime.getTime())
-    if (elapsedMs < POWER_PLAY_INITIAL_DELAY_MS) {
-      return {
-        phase: 'scheduled',
-        remainingMs: POWER_PLAY_INITIAL_DELAY_MS - elapsedMs,
-      }
-    }
-
-    const countdownElapsedMs = elapsedMs - POWER_PLAY_INITIAL_DELAY_MS
-    if (countdownElapsedMs < POWER_PLAY_COUNTDOWN_MS) {
-      return {
-        phase: 'countdown',
-        remainingMs: POWER_PLAY_COUNTDOWN_MS - countdownElapsedMs,
-      }
-    }
-
-    const activeElapsedMs = countdownElapsedMs - POWER_PLAY_COUNTDOWN_MS
-    if (activeElapsedMs < POWER_PLAY_DURATION_MS) {
-      return {
-        phase: 'active',
-        remainingMs: POWER_PLAY_DURATION_MS - activeElapsedMs,
-        currentWave: activeElapsedMs >= POWER_PLAY_SECOND_WAVE_AT_MS ? 2 : 1,
-      }
-    }
-
-    return {
-      phase: 'expired',
-      remainingMs: 0,
-      currentWave: 0,
-    }
+  shouldEnablePowerPlayForMatch() {
+    // Temporary stub until backend eligibility is wired.
+    return true
   },
   resumeScheduledPowerPlay(remainingMs) {
     this.hasScheduledPowerPlay = true
@@ -466,31 +441,15 @@ export const entitySpawnerComponent = {
   schedulePowerPlay() {
     this.syncCompletedPowerPlayFlag()
 
+    if (!this.shouldEnablePowerPlayForMatch()) {
+      return
+    }
+
     if (this.hasScheduledPowerPlay || this.hasCompletedPowerPlay) {
       return
     }
 
     if (this.restorePowerPlayState()) {
-      return
-    }
-
-    const timelineState = this.getPowerPlayTimelineState()
-    if (timelineState?.phase === 'scheduled' && timelineState.remainingMs > 0) {
-      this.resumeScheduledPowerPlay(timelineState.remainingMs)
-      return
-    }
-
-    if (timelineState?.phase === 'countdown' && timelineState.remainingMs > 0) {
-      this.startPowerPlayCountdown(timelineState.remainingMs)
-      return
-    }
-
-    if (timelineState?.phase === 'active' && timelineState.remainingMs > 0) {
-      this.activatePowerPlay(timelineState)
-      return
-    }
-
-    if (timelineState?.phase === 'expired') {
       return
     }
 
@@ -613,7 +572,7 @@ export const entitySpawnerComponent = {
     this.hidePowerPlayTimer()
     this.setPowerPlayScreenActive(false)
     this.clearPowerPlayAlmonds()
-    this.markPowerPlayPlayedForMatch()
+    this.markPowerPlayCompletedForCurrentSession()
     this.clearPowerPlayState()
   },
   showPowerPlayCountdown(label, value) {
@@ -775,7 +734,7 @@ export const entitySpawnerComponent = {
       if (meta.eventKey) {
         el.dataset.eventKey = String(meta.eventKey)
       }
-      console.log('[almond] tagged spawn:', meta)
+      // console.log('[almond] tagged spawn:', meta)
       this.scheduleAutoDespawn(el, meta.despawnMs)
     } catch (e) {
       console.warn('[almond] failed tagging spawn:', e)
@@ -794,10 +753,10 @@ export const entitySpawnerComponent = {
     el.__despawnTimer = window.setTimeout(() => {
       // If it was already tapped/removed, skip.
       if (!el.parentNode) return
-      console.log('[almond] auto-despawn:', {
-        type: el.dataset?.spawnType,
-        points: el.dataset?.points,
-      })
+      // console.log('[almond] auto-despawn:', {
+      //   type: el.dataset?.spawnType,
+      //   points: el.dataset?.points,
+      // })
       this.despawnElement(el)
     }, dur)
   },
@@ -891,10 +850,10 @@ export const entitySpawnerComponent = {
         // Instead, periodically re-check featured match status.
         this.bbStatusIntervalId = window.setInterval(async () => {
           try {
-            console.log('[bb] status tick: re-checking featured match…')
+            // console.log('[bb] status tick: re-checking featured match…')
             const nextSel = await getFeaturedMatchSelection({ "tournamentKey": "a-rz--cricket--bcci--iplt20--2026-ZGwl", now: new Date() })
             const nextStatus = String(nextSel?.status || '').toLowerCase()
-            console.log('[bb] status tick:', nextStatus)
+            // console.log('[bb] status tick:', nextStatus)
             if (isCompletedMatchStatus(nextStatus)) {
               this.handleGameEndRedirect({
                 matchKey: nextSel?.matchKey || matchKey,
@@ -930,10 +889,10 @@ export const entitySpawnerComponent = {
       return
     }
 
-    console.log('[bb] polling started, every', pollMs, 'ms')
+    // console.log('[bb] polling started, every', pollMs, 'ms')
     this.bbIntervalId = window.setInterval(async () => {
       try {
-        console.log('[bb] polling tick: fetching ball-by-ball…')
+        // console.log('[bb] polling tick: fetching ball-by-ball…')
         const matchDetails = await getMatch(this.bbMatchKey)
         const matchStatus = getMatchStatusString(matchDetails)
         if (isCompletedMatchStatus(matchStatus)) {
@@ -949,7 +908,7 @@ export const entitySpawnerComponent = {
         this.bbJson = json
         this.bbError = ''
         this.setLiveMatchConnected(true)
-        console.log('[bb] polling tick: success')
+        // console.log('[bb] polling tick: success')
         this.renderBallByBallStatus()
       } catch (e) {
         this.bbError = e?.message || 'Failed to refresh ball-by-ball'
@@ -983,12 +942,12 @@ export const entitySpawnerComponent = {
     if (this.bbIntervalId) {
       window.clearInterval(this.bbIntervalId)
       this.bbIntervalId = null
-      console.log('[bb] polling stopped')
+      // console.log('[bb] polling stopped')
     }
     if (this.bbStatusIntervalId) {
       window.clearInterval(this.bbStatusIntervalId)
       this.bbStatusIntervalId = null
-      console.log('[bb] status polling stopped')
+      // console.log('[bb] status polling stopped')
     }
     this.bbMatchStartTime = null
     this.setLiveMatchConnected(false)
@@ -1049,7 +1008,7 @@ export const entitySpawnerComponent = {
                 : ''
       const shouldSpawn = Boolean(eventKey)
       if (shouldSpawn && !this.isSpawningPausedForPowerPlay()) {
-        console.log('[bb] spawn trigger:', { kind, runs: runsNum })
+        // console.log('[bb] spawn trigger:', { kind, runs: runsNum })
         if (
           typeof window !== 'undefined' &&
           typeof window.showMatchEventPopup === 'function'
@@ -1059,9 +1018,9 @@ export const entitySpawnerComponent = {
         // (2) Almond appears as per IPL API logic and disappears after 20s (50 points).
         this.spawnMatchEventAlmond(eventKey)
       } else if (shouldSpawn) {
-        console.log('[bb] spawn skipped during power play:', { kind, runs: runsNum })
+        // console.log('[bb] spawn skipped during power play:', { kind, runs: runsNum })
       } else {
-        console.log('[bb] no spawn:', { kind, runs: runsNum })
+        // console.log('[bb] no spawn:', { kind, runs: runsNum })
       }
     }
 
@@ -1189,7 +1148,7 @@ export const entitySpawnerComponent = {
     }
 
     this.selectedAlmond = event && event.currentTarget ? event.currentTarget : null
-    console.log('scored')
+    // console.log('scored')
     // Award points immediately on tap (prevents "score not updating" if user doesn't hit OK).
     try {
       const pts = this.resolveSelectedAlmondPoints()
@@ -1199,7 +1158,7 @@ export const entitySpawnerComponent = {
             this.selectedAlmond.dataset.claimed = '1'
             this.score += pts
             this.lastAwardedPoints = pts
-            console.log('[score] +', pts, '=>', this.score)
+            // console.log('[score] +', pts, '=>', this.score)
             this.renderScore()
             const unlockedBenefit = this.setRewardPopupContent(pts)
           // Submit score to backend API
@@ -1213,7 +1172,7 @@ export const entitySpawnerComponent = {
             pointsEarned: pts,
             ...(unlockedBenefit ? { benefit: unlockedBenefit } : {}),
           };
-          console.log('[api] submitting:', payload)
+          // console.log('[api] submitting:', payload)
           if (this.jwtToken) {
             fetch(apiUrl, {
               method: "POST",
@@ -1230,7 +1189,7 @@ export const entitySpawnerComponent = {
               return response.json();
             })
             .then(data => {
-              console.log("[api] Score submitted:", data);
+              // console.log("[api] Score submitted:", data);
             })
             .catch(err => {
               console.warn("[api] Score submission error:", err);
@@ -1299,7 +1258,7 @@ export const entitySpawnerComponent = {
     parentElement.appendChild(newElement)
 
 
-    console.log('[almond] spawn type:', spawnType)
+    // console.log('[almond] spawn type:', spawnType)
     const glowTextureId =
       spawnType === 'match' || spawnType === 'powerplay-special'
         ? 'glowTexYellow'

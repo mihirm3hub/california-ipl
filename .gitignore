@@ -5,3 +5,4 @@ tmp
 .env
 .vscode
 .idea
+testCommand.md

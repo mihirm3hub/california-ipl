@@ -212,7 +212,7 @@ const fetchUserData = async () => {
 
     const payload = await response.json()
     const userData = payload?.data || {}
-    console.log('[userData] fetched:', userData)
+    // console.log('[userData] fetched:', userData)
 
     weeklyPoints = Number(userData.weeklyPoints) || 0
     overallPoints = Number(userData.overallPoints) || 0
@@ -689,7 +689,7 @@ const initGameEndRedirect = () => {
     void goToGameEndScreen(summary)
   }
 
-  console.log('[game-end] test helper ready: window.showGameEndScreen()')
+  // console.log('[game-end] test helper ready: window.showGameEndScreen()')
 }
 
 window.addEventListener('DOMContentLoaded', () => {

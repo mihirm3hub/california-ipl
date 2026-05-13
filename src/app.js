@@ -4,7 +4,7 @@
 // is loaded, and before body.html is loaded.
 
 import './index.css'
-import './main'
+import './components/main'
 
 AFRAME.registerComponent('no-cull', {
     init() {
@@ -14,14 +14,8 @@ AFRAME.registerComponent('no-cull', {
     },
 })
 // Register custom A-Frame components in app.js before the scene in body.html has loaded.
-import { entitySpawnerComponent } from './entity-spawner'
+import { entitySpawnerComponent } from './components/entity-spawner'
 AFRAME.registerComponent('entity-spawner', entitySpawnerComponent)
-
-import { chromaKeyShader } from './chroma-key'
-AFRAME.registerShader('chromakey', chromaKeyShader)
-
-import { playVideoComponent } from './play-video'
-AFRAME.registerComponent('play-video', playVideoComponent)
 
 let hasStartedLoaderSequence = false
 let hasDispatchedLoaderHidden = false

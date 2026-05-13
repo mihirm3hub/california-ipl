@@ -2,7 +2,8 @@ node_modules
 dist
 tmp
 .DS_Store
-.env
+.env.local
+.env.*.local
 .vscode
 .idea
 testCommand.md

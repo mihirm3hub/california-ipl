@@ -62,17 +62,17 @@ const config = {
       inject: false,
     }),
     new HtmlWebpackPlugin({
-      template: path.join(srcPath, 'benefit-collection.html'),
+      template: path.join(srcPath, 'pages', 'benefit-collection.html'),
       filename: 'benefit-collection.html',
       inject: false,
     }),
     new HtmlWebpackPlugin({
-      template: path.join(srcPath, 'missing-out.html'),
+      template: path.join(srcPath, 'pages', 'missing-out.html'),
       filename: 'missing-out.html',
       inject: false,
     }),
     new HtmlWebpackPlugin({
-      template: path.join(srcPath, 'super.html'),
+      template: path.join(srcPath, 'pages', 'super.html'),
       filename: 'super.html',
       inject: false,
     }),
@@ -89,63 +89,23 @@ const config = {
           noErrorOnMissing: true,
         },
         {
-          from: path.join(srcPath, 'lib', 'benefitMessages.js'),
+          from: path.join(srcPath, 'css'),
+          to: path.join(distPath, 'css'),
+          noErrorOnMissing: true,
+        },
+        {
+          from: path.join(srcPath, 'components', 'lib', 'benefitMessages.js'),
           to: path.join(distPath, 'lib', 'benefitMessages.js'),
           noErrorOnMissing: true,
         },
         {
-          from: path.join(srcPath, 'lib', 'cricketApi.js'),
+          from: path.join(srcPath, 'components', 'lib', 'cricketApi.js'),
           to: path.join(distPath, 'lib', 'cricketApi.js'),
           noErrorOnMissing: true,
         },
         {
           from: path.join(rootPath, 'image-targets'),
           to: path.join(distPath, 'image-targets'),
-          noErrorOnMissing: true,
-        },
-        {
-          from: path.join(rootPath, 'almond.glb'),
-          to: path.join(distPath, 'almond.glb'),
-          noErrorOnMissing: true,
-        },
-        {
-          from: path.join(rootPath, 'ring.mp4'),
-          to: path.join(distPath, 'ring.mp4'),
-          noErrorOnMissing: true,
-        },
-        {
-          from: path.join(rootPath, '2.mp4'),
-          to: path.join(distPath, '2.mp4'),
-          noErrorOnMissing: true,
-        },
-        {
-          from: path.join(rootPath, 'sparkles.mp4'),
-          to: path.join(distPath, 'sparkles.mp4'),
-          noErrorOnMissing: true,
-        },
-        {
-          from: path.join(rootPath, 'logoM.png'),
-          to: path.join(distPath, 'logoM.png'),
-          noErrorOnMissing: true,
-        },
-        {
-          from: path.join(rootPath, 'Ellipse.png'),
-          to: path.join(distPath, 'Ellipse.png'),
-          noErrorOnMissing: true,
-        },
-        {
-          from: path.join(rootPath, 'Ellipse.png'),
-          to: path.join(distPath, 'ellipse.png'),
-          noErrorOnMissing: true,
-        },
-        {
-          from: path.join(rootPath, 'Ellipse-yellow.png'),
-          to: path.join(distPath, 'Ellipse-yellow.png'),
-          noErrorOnMissing: true,
-        },
-        {
-          from: path.join(rootPath, 'Ellipse-yellow.png'),
-          to: path.join(distPath, 'ellipse-yellow.png'),
           noErrorOnMissing: true,
         },
       ],

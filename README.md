@@ -1,19 +1,17 @@
 # IPL World WebAR Experience
 
-`ipl-world` is a branded 8th Wall + A-Frame WebAR game built around live IPL match activity. Players open the AR scene, collect spawned almond models for points, unlock nutrition-benefit cards, and move through companion pages for inactivity recovery, benefit collection, and end-of-match sharing.
+`ipl-world` powers California Almonds' 2026 IPL season campaign experience, "AlmondWin". The experience runs at `AlmondWin.com` and gives fans an interactive in-match AR game where they scan their surroundings, collect virtual California Almonds, earn points, and compete for match-ticket rewards through May 24, 2026.
 
-This repository is not a stock 8th Wall sample anymore. It contains custom gameplay logic, backend integration, multi-page UI flows, and static deployment configuration for Netlify.
+The campaign positions California Almonds as a power-packed superfood for cricket season, with messaging focused on performance, recovery, sustained energy, and the broader nutritional value of almonds. This repository contains the gameplay logic, campaign pages, reward flow, backend integration, and deployment setup behind that experience.
 
 ## What The App Does
 
-- Renders a world-tracked WebAR scene using 8th Wall and A-Frame.
-- Spawns silver almonds on a timer during an eligible live-match session.
-- Spawns premium golden almonds for specific ball-by-ball match events.
-- Tracks weekly points and unlocked benefits in local storage and via backend APIs.
-- Shows a one-minute Power Play flow with countdown, overlay state, and special spawn waves.
-- Redirects inactive players to a "missing out" page after 5 minutes.
-- Redirects completed matches to a summary/share page.
-- Includes a benefit collection page hydrated from backend user data when available.
+- Runs the `AlmondWin` interactive mobile campaign for the 2026 IPL season.
+- Lets users scan their surroundings to find virtual California Almonds and collect points.
+- Awards 10 points for regular almonds and 50 points for Golden Almonds during key match moments such as 4s, 6s, and wickets.
+- Connects gameplay to live match state so the experience is active during relevant in-match windows.
+- Tracks points, reward progression, and unlocked almond-benefit content through local state and backend APIs.
+- Supports companion campaign pages for inactivity recovery, benefit collection, and end-of-match summary/share moments.
 
 ## Main User Flow
 
@@ -76,13 +74,35 @@ The dev server is configured through `config/webpack.config.js` and serves from 
 
 ## Environment File
 
-This repository includes a committed `.env` file with placeholder values only. Do not commit real API keys, runtime tokens, or project secrets into that file.
+Do not commit `.env` with real API keys, runtime tokens, or project secrets. Keep `.env` local-only and gitignored.
 
 Recommended usage:
 
-- keep the committed `.env` as a template/reference
-- replace the placeholder values locally before running the project
+- create or maintain `.env` locally on your machine only
 - store machine-specific or secret variants in ignored local env files such as `.env.local`
+- never paste real credentials into tracked files or public pull requests
+
+To replace placeholders with real values locally:
+
+1. Create a local `.env` file in the repository root if it does not already exist.
+2. Open the file and replace each placeholder with the real value from your Cricket API or deployment provider.
+3. Save the file and restart the local dev server so any local tooling picks up the updated values.
+
+Expected keys:
+
+- `VITE_CRICKET_API_KEY`: your Cricket API key
+- `VITE_CRICKET_PROJECT_KEY`: your Cricket project key
+- `VITE_CRICKET_RS_TOKEN`: your runtime service token, if your environment uses one
+- `VITE_CRICKET_IPL_TOURNAMENT_KEY`: the IPL tournament key used for featured match selection
+
+Example local-only file:
+
+```env
+VITE_CRICKET_API_KEY=your_real_api_key
+VITE_CRICKET_PROJECT_KEY=your_real_project_key
+VITE_CRICKET_RS_TOKEN=your_real_runtime_token
+VITE_CRICKET_IPL_TOURNAMENT_KEY=your_real_tournament_key
+```
 
 ## Production Build
 
@@ -162,7 +182,7 @@ Current gameplay assumptions in source:
 
 ## Configuration Notes
 
-There is a checked-in `.env` file with placeholder values, but the current webpack/browser code does not consume those `VITE_*` variables. The live API base and tournament selection are hardcoded in source today:
+There may be a local `.env` file for developer convenience, but the current webpack/browser code does not consume those `VITE_*` variables. The live API base and tournament selection are hardcoded in source today:
 
 - API base: [`src/components/lib/cricketApi.js`](./src/components/lib/cricketApi.js)
 - tournament key usage: [`src/components/entity-spawner.js`](./src/components/entity-spawner.js)
@@ -198,7 +218,7 @@ Because some assets are managed with Git LFS, clone and deployment environments 
 ## Recommended Next Improvements
 
 - Move API base URL and tournament key into real environment-based configuration.
-- Keep `.env` placeholder-only and move any real secret handling to ignored local env files or proper deployment configuration.
+- Keep `.env` and any real secret handling out of git, and use ignored local env files or proper deployment configuration.
 - Decide whether `game/` is still required; if not, remove it to reduce duplication.
 - Centralize route/path handling for standalone static hosting versus embedded-site hosting.
 - Add a short architecture note or API contract document for backend endpoints.

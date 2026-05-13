@@ -1,6 +1,6 @@
-# California Almonds AlmondWin 2026 Campaign Experience
+# California Almonds AlmondWin
 
-This repository powers California Almonds' 2026 IPL season campaign experience, "AlmondWin". The experience runs at `AlmondWin.com` and gives fans an interactive in-match AR game where they scan their surroundings, collect virtual California Almonds, earn points, and compete for match-ticket rewards through May 24, 2026.
+This repository powers California Almonds' 2026 IPL season campaign experience, "AlmondWin". The experience runs at [AlmondWin.com](https://almondwin.com/) and gives fans an interactive in-match AR game where they scan their surroundings, collect virtual California Almonds, earn points, and compete for match-ticket rewards through May 24, 2026.
 
 The campaign positions California Almonds as a power-packed superfood for cricket season, with messaging focused on performance, recovery, sustained energy, and the broader nutritional value of almonds. This repository contains the gameplay logic, campaign pages, reward flow, backend integration, and deployment setup behind that experience.
 
